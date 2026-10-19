@@ -70,10 +70,13 @@ struct StopStreamGate<Payload> {
 }
 
 extension TalkModel {
+    static let stopMarkerAvailable = false
+
     /// Schedule after the capture callback has had a chance to finish synchronously.
     /// If it did, normal final delivery already owns the session and no marker is posted.
     func streamMarkerAtStop(session: UUID, snapshot: (segment: CompletedSegment, stableText: String)) {
-        guard selectedProduct == "Tokens", metadataEnabled, Self.threeStepPasteEnabled, !isSyntheticRun,
+        // The chill footer (2026-10-18) has no "# π" opening line, so nothing is streamed at Stop.
+        guard Self.stopMarkerAvailable, selectedProduct == "Tokens", metadataEnabled, Self.threeStepPasteEnabled, !isSyntheticRun,
               target != nil else { return }
         let stoppedText = snapshot.segment.transcript
         guard !stoppedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }

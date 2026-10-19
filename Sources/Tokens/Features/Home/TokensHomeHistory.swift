@@ -152,7 +152,7 @@ extension TokensHome {
             Button("Clear History", role: .destructive) { model.clearPromptHistory() }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Everything you said is deleted from this Mac. This cannot be undone.")
+            Text("Clear saved history? Active or undelivered words, repair backups, and copies in other apps may remain.")
         }
     }
 

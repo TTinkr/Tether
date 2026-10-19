@@ -4,21 +4,62 @@ import ApplicationServices
 import TokensCore
 
 extension TalkModel {
+    /// Standby feedback is read-only; delivery still acquires its own exact target at Stop.
+    func setPersistentDestinationPreviewEnabled(_ enabled: Bool) {
+        persistentDestinationPreviewEnabled = enabled
+        syncDestinationPreview()
+    }
+
+    func setDestinationPreviewSuspended(_ suspended: Bool) {
+        guard destinationPreviewSuspended != suspended else { return }
+        destinationPreviewSuspended = suspended
+        syncDestinationPreview()
+    }
+
+    var destinationPreviewAllowed: Bool {
+        DestinationPreviewPolicy.runs(phase: phase, suspended: destinationPreviewSuspended)
+    }
+
+    func syncDestinationPreview() {
+        if destinationPreviewAllowed {
+            if destinationPreviewGeneration == nil { startDestinationPreview() }
+        } else if destinationPreviewGeneration != nil { stopDestinationPreview() }
+    }
+
+    /*
+    A box already verified stays put through a re-check (UX review's 2026-10-18 recording: typing
+    into a verified box swapped its corners for the pointer ring on every keystroke, then back).
+    Only a read that finds no box, another app in front, or missing access shows the ring.
+    */
+    func keepVerifiedBoxOrShowRing() {
+        let mode = PasteMarker.shared.mode
+        if mode == .field || mode == .caret { return }
+        showDestinationCursorFallback()
+    }
+
+    func showDestinationCursorFallback() {
+        if destinationPreviewAllowed, phase == .capturing, PasteCursorRingPreference.load(), !isSyntheticRun {
+            PasteMarker.shared.showCursor()
+        } else { PasteMarker.shared.hide() }
+    }
+
     func startDestinationPreview() {
         stopDestinationPreview()
-        guard !isSyntheticRun else { return }
+        guard !isSyntheticRun, destinationPreviewAllowed else { return }
         destinationPreviewGeneration = UUID()
-        DestinationPreviewInvalidation.shared.start { [weak self] in
+        DestinationPreviewInvalidation.shared.start { [weak self] soft in
             guard let self, self.destinationPreviewGeneration != nil else { return }
-            PasteMarker.shared.hide(reason: "invalidated")
+            // Typing in the box (value, selection, layout) keeps it; focus, window, app, Space
+            // or screen changes drop it at once (Codex review of c390905).
+            if soft { self.keepVerifiedBoxOrShowRing() } else { self.showDestinationCursorFallback() }
             self.destinationLabel = "Focus changed"
             // Read the new geometry now instead of leaving the box gone until the next tick (build 81).
             self.scheduleDestinationRefresh(after: 0.1)
         }
         refreshDestinationPreview()
-        let timer = Timer(timeInterval: 0.8, repeats: true) { [weak self] _ in
+        let timer = Timer(timeInterval: DestinationPreviewPolicy.pollInterval, repeats: true) { [weak self] _ in
             guard let self else { return }
-            guard self.phase == .capturing else { self.stopDestinationPreview(); return }
+            guard self.destinationPreviewAllowed else { self.stopDestinationPreview(); return }
             self.refreshDestinationPreview()
         }
         destinationPreviewTimer = timer
@@ -34,34 +75,37 @@ extension TalkModel {
         destinationPreviewTimer = nil
         destinationPreviewGeneration = nil
         destinationPreviewInFlight = false
+        destinationPreviewRefreshPending = false
         destinationPreviewRetries = 0
     }
 
     /*
-    One quick re-read (build 81): after an invalidation, a slow reply or a passing AX failure the
-    box comes back in about a tenth of a second rather than at the next 0.8 s tick. Several asks
-    while one is pending make one read.
+    After an invalidation, a slow reply or a passing AX failure, ask for fresh geometry
+    before the next regular tick. Several asks while one is pending make one read.
     */
     func scheduleDestinationRefresh(after delay: TimeInterval) {
         guard let generation = destinationPreviewGeneration, !destinationPreviewRefreshPending else { return }
         destinationPreviewRefreshPending = true
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
-            guard let self else { return }
+            guard let self, self.destinationPreviewGeneration == generation else { return }
             self.destinationPreviewRefreshPending = false
-            guard self.destinationPreviewGeneration == generation, self.phase == .capturing else { return }
+            guard self.destinationPreviewAllowed else { return }
             if self.destinationPreviewInFlight { self.scheduleDestinationRefresh(after: 0.1) } else { self.refreshDestinationPreview() }
         }
     }
 
     func refreshDestinationPreview() {
-        guard !destinationPreviewInFlight, let generation = destinationPreviewGeneration else { return }
+        guard destinationPreviewAllowed, let generation = destinationPreviewGeneration else { return }
+        // Both cues off: nothing to read for. Either on: read, so the ring knows when a box is verified.
+        guard PasteMarkerPreference.load() || PasteCursorRingPreference.load() else { PasteMarker.shared.hide(); return }
+        guard !destinationPreviewInFlight else { return }
         guard AXIsProcessTrusted() else {
-            destinationLabel = "Text access unavailable"; PasteMarker.shared.hide(); return
+            destinationLabel = "Text access unavailable"; showDestinationCursorFallback(); return
         }
         guard let app = NSWorkspace.shared.frontmostApplication,
               !DeliveryTargetPolicy.isOwnApplication(processID: app.processIdentifier,
                  bundleIdentifier: app.bundleIdentifier, currentProcessID: ProcessInfo.processInfo.processIdentifier) else {
-            destinationLabel = "Choose a text field"; PasteMarker.shared.hide(); return
+            destinationLabel = "Choose a text field"; showDestinationCursorFallback(); return
         }
         destinationPreviewInFlight = true
         let pid = app.processIdentifier
@@ -74,28 +118,29 @@ extension TalkModel {
             DispatchQueue.main.async { [weak self] in
                 guard let self, self.destinationPreviewGeneration == generation else { return }
                 self.destinationPreviewInFlight = false
-                guard self.phase == .capturing else { PasteMarker.shared.hide(); return }
+                guard self.destinationPreviewAllowed else { PasteMarker.shared.hide(); return }
                 let stillFront = NSWorkspace.shared.frontmostApplication?.processIdentifier == pid
                 let currentRevision = DestinationPreviewInvalidation.shared.revision
                 guard DestinationPreview.fresh(requestedAt: requestedAt,
                     now: ProcessInfo.processInfo.systemUptime, revision: revision,
                     currentRevision: currentRevision, sameApplication: stillFront) else {
                     /*
-                    A stale reply never draws. Another app in front: the box goes. Invalidated
-                    meanwhile: the invalidation already took it down and asked for a read. Only
-                    slow (same app, nothing changed since): the box on screen is still right, so
-                    it stays, and a fresh read follows (build 81; it used to vanish until the next tick).
+                    A stale reply never draws. Another app in front shows the ring; an invalidation
+                    or a slow reply keeps a verified box and asks for a fresh read.
                     */
-                    if !stillFront { PasteMarker.shared.hide(reason: "app_changed") }
+                    if !stillFront { self.showDestinationCursorFallback() }
                     else if revision == currentRevision { self.retryDestinationPreview("slow_read") }
                     return
                 }
                 self.destinationLabel = stillFront ? reading.label : "Focus changed"
-                if stillFront, PasteMarkerPreference.load(), DestinationPreview.showsMarker(reading) {
+                if stillFront, DestinationPreview.showsMarker(reading) {
                     self.destinationPreviewRetries = 0
-                    PasteMarker.shared.show(field: reading.field, caret: reading.anchor,
-                                            shortcutName: self.shortcutName, role: reading.role)
-                } else if stillFront, PasteMarkerPreference.load(), let skip = reading.skip,
+                    // A verified box: its corners when that switch is on, else nothing (no ring).
+                    if PasteMarkerPreference.load() {
+                        PasteMarker.shared.show(field: reading.field, caret: reading.anchor,
+                                                shortcutName: self.shortcutName, role: reading.role)
+                    } else { PasteMarker.shared.hide() }
+                } else if stillFront, let skip = reading.skip,
                           DestinationPreview.isPassing(skip) {
                     self.retryDestinationPreview(skip)
                 } else {
@@ -103,24 +148,25 @@ extension TalkModel {
                     if stillFront, PasteMarkerPreference.load() {
                         PasteMarker.shared.note("paste_marker_skipped reason=\(reading.skip ?? "no_box") role=\(reading.role ?? "-")")
                     }
-                    PasteMarker.shared.hide(reason: reading.skip ?? "no_box")
+                    self.showDestinationCursorFallback()
                 }
             }
         }
     }
 
     /*
-    A passing miss (slow reply, AX busy or timing out, focus or selection moving mid-read,
-    Chromium still building its tree): keep what is on screen and read again shortly. After
-    three in a row the box goes, with the reason logged, and the regular tick takes over.
+    A passing miss (AX busy, focus moving, Chromium building its tree) keeps a verified box
+    (or shows the ring when there is none) and retries shortly. After three misses the ring
+    replaces the box and the regular tick takes over.
     */
     private func retryDestinationPreview(_ reason: String) {
+        keepVerifiedBoxOrShowRing()
         destinationPreviewRetries += 1
         if destinationPreviewRetries <= DestinationPreview.passingRetries {
             scheduleDestinationRefresh(after: 0.15)
         } else {
             PasteMarker.shared.note("paste_marker_skipped reason=\(reason) retries=\(destinationPreviewRetries - 1)")
-            PasteMarker.shared.hide(reason: reason)
+            showDestinationCursorFallback()
         }
     }
 
@@ -133,8 +179,14 @@ final class DestinationPreviewInvalidation {
     private let workspace: NotificationCenter
     private let application: NotificationCenter
     private var tokens: [(NotificationCenter, NSObjectProtocol)] = []
-    private var onChange: (() -> Void)?
+    /// The argument is true for a soft change: the same box's text, selection or layout.
+    private var onChange: ((Bool) -> Void)?
     private(set) var revision: UInt64 = 0
+
+    /// Edits inside the verified box; every other notification is a hard change.
+    static let softNotifications: Set<String> = [kAXValueChangedNotification, kAXSelectedTextChangedNotification,
+                                                 kAXLayoutChangedNotification]
+    static func isSoft(_ notification: String) -> Bool { softNotifications.contains(notification) }
 
     init(workspace: NotificationCenter = NSWorkspace.shared.notificationCenter,
          application: NotificationCenter = .default) {
@@ -142,7 +194,7 @@ final class DestinationPreviewInvalidation {
         self.application = application
     }
 
-    func start(onChange: @escaping () -> Void) {
+    func start(onChange: @escaping (Bool) -> Void) {
         stop()
         self.onChange = onChange
         for name in [NSWorkspace.didActivateApplicationNotification, NSWorkspace.activeSpaceDidChangeNotification,
@@ -159,10 +211,10 @@ final class DestinationPreviewInvalidation {
         tokens.append((center, token))
     }
 
-    func invalidate() {
+    func invalidate(soft: Bool = false) {
         guard let onChange else { return }
         revision &+= 1
-        onChange()
+        onChange(soft)
     }
 
     func stop() {
@@ -175,12 +227,17 @@ final class DestinationPreviewInvalidation {
     deinit { for (center, token) in tokens { center.removeObserver(token) } }
 }
 
-/// Every required focus/geometry notification must be subscribed before a point is advertised.
-/// Unsupported, timed-out and unattempted registrations all fail closed.
+/// Both app focus subscriptions are mandatory. Unsupported supplementary layout/value
+/// subscriptions use bounded polling; incomplete, timed-out or invalid registrations fail closed.
 enum DestinationObservationReadiness {
-    static func ready(results: [AXError], requiredCount: Int) -> Bool {
-        requiredCount > 0 && results.count == requiredCount
-            && results.allSatisfy { $0 == .success || $0 == .notificationAlreadyRegistered }
+    static func ready(results: [AXError], requiredCount: Int, mandatoryCount: Int? = nil) -> Bool {
+        let mandatory = mandatoryCount ?? requiredCount
+        guard requiredCount > 0, mandatory > 0, mandatory <= requiredCount,
+              results.count == requiredCount else { return false }
+        return results.enumerated().allSatisfy { index, result in
+            result == .success || result == .notificationAlreadyRegistered
+                || (index >= mandatory && result == .notificationUnsupported)
+        }
     }
 
     /*
@@ -215,9 +272,9 @@ private final class DestinationAXObservation {
         // support. A timeout or busy app is tried again on the next read (build 81).
         self.pid = pid; self.field = field; self.window = window
         var created: AXObserver?
-        let callback: AXObserverCallback = { _, _, _, _ in
+        let callback: AXObserverCallback = { _, _, notification, _ in
             // Source is installed on the main run loop; no AX work or content reads here.
-            DestinationPreviewInvalidation.shared.invalidate()
+            DestinationPreviewInvalidation.shared.invalidate(soft: DestinationPreviewInvalidation.isSoft(notification as String))
         }
         guard AXObserverCreate(pid, callback, &created) == .success, let created else { return false }
         let budget = DestinationAXBudget(seconds: 0.12)
@@ -236,9 +293,9 @@ private final class DestinationAXObservation {
             }
         }
         let required = registrations.reduce(0) { $0 + $1.1.count }
-        ready = DestinationObservationReadiness.ready(results: results, requiredCount: required)
+        ready = DestinationObservationReadiness.ready(results: results, requiredCount: required, mandatoryCount: 2)
         guard ready else {
-            if DestinationObservationReadiness.retryable(results: results, requiredCount: required) { stop() }
+            if results.count != required || results.contains(where: { $0 != .success && $0 != .notificationAlreadyRegistered && $0 != .notificationUnsupported }) { stop() }
             return false
         }
         self.observer = created
@@ -307,7 +364,7 @@ enum DestinationPreview {
         losing the first second of the box (build 81). Two tries per app, then read as is.
         */
         if warmAttempts[pid, default: 0] < 2, budget.arm(app) {
-            if TargetDelivery.enableManualAccessibility(app) {
+            if TargetDelivery.enableManualAccessibility(app, bundleIdentifier: bundleIdentifier) {
                 warmAttempts[pid] = 2
                 return unavailable("warming")
             }
@@ -552,5 +609,21 @@ private final class AXNode: DestinationFocusNode {
         guard budget.arm(element),
               AXUIElementCopyAttributeValue(element, name as CFString, &raw) == .success else { return false }
         return (raw as? NSNumber)?.boolValue ?? false
+    }
+}
+
+/*
+Destination cues (the dotted corners and the pointer ring) run only while a talk records
+(UX review: "this should only pop up during live dictations ... kind of like the mouse
+bubble"). The standby bubble stays visible at rest, but clicking around with Tokens open no
+longer draws corners. Preview stops while a final target is being delivered.
+*/
+enum DestinationPreviewPolicy {
+    static let pollInterval: TimeInterval = 0.25
+    /// A verified box lasts this long without a fresh read before the ring replaces it. Reads come
+    /// every 0.25 s, but slow down while text is typed (build 83: 0.5 s made the box blink).
+    static let cueLifetime: TimeInterval = 1.5
+    static func runs(phase: TalkPhase, suspended: Bool = false) -> Bool {
+        !suspended && phase == .capturing
     }
 }

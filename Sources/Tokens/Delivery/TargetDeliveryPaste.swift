@@ -68,6 +68,12 @@ extension TargetDelivery {
         isCurrent: @escaping () -> Bool
     ) async -> DeliveryOutcome {
         guard isCurrent() else { return .failed("delivery_cancelled") }
+        // A browser must never receive a suffix as if it were the whole dictation.
+        // A legacy/in-flight prefix is already a partial delivery: retain recovery and
+        // refuse a continuation instead of appending or blindly replaying the full text.
+        guard !exactContinuation || !PasteAckHistory.requiresSingleFinalPaste(bundle: captured.application.bundleIdentifier) else {
+            return .failed("partial_browser_continuation_refused")
+        }
         guard !rawText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return .failed("nothing_to_insert")
         }

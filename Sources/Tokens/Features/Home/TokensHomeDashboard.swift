@@ -12,8 +12,11 @@ import SwiftUI
 
 extension TokensHome {
     /*
-    Home (DESIGN.md §6.1): the hero lines (or the live block while talking), the one rule, then
-    Recent. One spacing-0 column of whole squares, so every single line's baseline is on a rule.
+    Home (DESIGN.md §6.1), build 83 (approved mock): the talk line ("Tap
+    [key] to talk", the verb switches tap and hold) over a resting chalk line, or the live block
+    while talking; then the talks grouped by day beside a small card (words this week, usual
+    speed, streak, speech model). First launch shows how to try a first talk instead. Blocked:
+    the blocked hero alone. One spacing-0 column of whole squares, every baseline on a rule.
     The heading sits on rule 2, level with the other pages' titles (TokensHomeHeroStart lifts
     it). The column starts at the other pages' left edge and may run up to 14 squares wide.
     `inner` (the sheet width) is kept for the shell's call; the column reads tokensSheetSize.
@@ -28,35 +31,53 @@ extension TokensHome {
         let confirmed = fixture == nil ? model.audioIsConfirmed : detail != .arming
         let controls = TokensHomeLiveControls.shown(phase: phase, audioConfirmed: confirmed,
                                                     heldByKey: fixture == nil && model.talkIsHeldByKey)
-        return ScrollView(.vertical) {
+        return homeColumn(live: live, hint: hint, fixture: fixture, detail: detail,
+                          confirmed: confirmed, controls: controls)
+        .modifier(TokensHistoryPreviewFixtures(model: model, apply: {
+            applyHistoryPreviewFixtures()
+            TokensHomePreview.applyHistory(model)
+        }))
+    }
+
+    /// The header (talk line, or the live block), the board of talks and the side card, or the
+    /// blocked hero, in Home's ruled column.
+    private func homeColumn(live: Bool, hint: TokensDictationHint, fixture: TokensHomePreview.Live?,
+                            detail: TokensHomePreview.LiveDetail?, confirmed: Bool,
+                            controls: TokensHomeLiveControls) -> some View {
+        ScrollView(.vertical) {
             VStack(alignment: .leading, spacing: 0) {
-                if live {
-                    TokensHomeLiveCard(hint: hint,
-                                       keyName: model.shortcutName,
-                                       text: fixture == nil ? mainLiveText : TokensHomePreview.liveText,
-                                       samples: fixture == nil ? model.previewWaveform ?? audio.waveform
-                                                               : TokensHomePreview.liveSamples,
-                                       confirmed: confirmed,
-                                       controls: controls,
-                                       keepsInApp: fixture == nil ? model.finishKeepsWordsInApp : detail == .kept,
-                                       stop: fixture == nil ? { model.stopTalkFromHome() } : {},
-                                       discard: fixture == nil ? { model.discardTalkFromHome() } : {})
+                if live || heroReady {
+                    // top, one rule, then the talks on the left and the card on the right.
+                    VStack(alignment: .leading, spacing: 0) {
+                            if live {
+                                TokensHomeLiveCard(hint: hint,
+                                                   keyName: model.shortcutName,
+                                                   text: fixture == nil ? mainLiveText : TokensHomePreview.liveText,
+                                                   samples: fixture == nil ? model.previewWaveform ?? audio.waveform
+                                                                           : TokensHomePreview.liveSamples,
+                                                   confirmed: confirmed,
+                                                   controls: controls,
+                                                   keepsInApp: fixture == nil ? model.finishKeepsWordsInApp : detail == .kept,
+                                                   stop: fixture == nil ? { model.stopTalkFromHome() } : {},
+                                                   discard: fixture == nil ? { model.discardTalkFromHome() } : {})
+                            } else {
+                                TokensHomeRestHead(keyName: TokensHomePreview.keyName(model) ?? model.shortcutName,
+                                                   tap: (TokensHomePreview.mode(model) ?? model.rightOptionMode) == .tap) {
+                                    keyChipButton
+                                }
+                            }
+                    }
+                    TokensHairline(strong: true)
+                        .tokensOnRule()
+                    TokensHomeBoard(talks: { homeTalks }, card: { homeSideCard })
                 } else {
                     homeHero(hint: hint)
                 }
-                // The board's one rule, drawn over the grid line under the hero.
-                TokensHairline(strong: true)
-                    .tokensOnRule()
-                recentHome
             }
             .modifier(TokensHomeColumn())
         }
         .tokensRuledScroll()
         .tokensRestingEdge()
-        .modifier(TokensHistoryPreviewFixtures(model: model, apply: {
-            applyHistoryPreviewFixtures()
-            TokensHomePreview.applyHistory(model)
-        }))
     }
 
     /// The talk the rail and Home draw: the model's phase, else a render-only live fixture.
@@ -71,37 +92,137 @@ extension TokensHome {
     // MARK: Hero
 
     /*
-    Ready: "Time to talk", "Hold [key] to talk", Speech model, any held-words line (with its
-    Copy), any earlier-talk line, then the Today line (TokensHomeTodayLine, a link to Stats).
-    Blocked: "Almost ready", the first blocker with its one red button, then "Then hold [key]
-    to talk" and Speech model. One heading line in both states, never a greeting above it.
-    TokensHomeLayout.heroCells counts these same lines for Recent's row budget (build 81).
-    Proof renders can force Ready with --public-preview-ready, or a blocker with
-    --home-preview-blocker.
+    Blocked (a grant or setup step stops talking): "Almost ready", the first blocker with its one
+    red button, then "Then tap [key] to talk". Ready Home is TokensHomeRestHead instead. Proof
+    renders can force Ready with --public-preview-ready, or a blocker with --home-preview-blocker.
     */
     private func homeHero(hint: TokensDictationHint) -> some View {
-        let ready = heroReady
+        let tap = (TokensHomePreview.mode(model) ?? model.rightOptionMode) == .tap
         return VStack(alignment: .leading, spacing: 0) {
-            TokensHomeHeading(ready: ready)
-            if ready {
-                dictateLine(lead: hint.verb)
-                engineLine
-                heldWordsLine
-                earlierTalkLine
-                TokensHomeTodayLine(today: TokensHomeToday.summary(history: model.promptHistory,
-                                                                   wordsTotal: wordsTotal)) {
-                    select(.stats)
-                }
-                .tokensOnRule()
-            } else {
-                homeStatusLine
-                dictateLine(lead: "Then " + hint.verb.lowercased())
-                engineLine
-            }
+            TokensHomeHeading(ready: false)
+            homeStatusLine
+            dictateLine(lead: "Then " + (tap ? "tap" : "hold"))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("tokens.home.hero")
+    }
+
+    /*
+    Under the talk space and its rule: the talks, newest first and grouped by day like History,
+    on the left; the side card (TokensHomeSideCard) on the right (UX review). Words that did not land lead the list as their own rows. With no
+    talks yet (first launch) the list is three steps to a first talk. A column too narrow for both
+    keeps the list and drops the card (Stats and Models still have it all).
+    */
+
+    private var homeSideCard: some View {
+        _ = storedSpeechEngine  // redraw when the choice changes
+        let mode = TokensHomePreview.mode(model) ?? model.rightOptionMode
+        return TokensHomeSideCard(summary: TokensHomeCardSummary.cached(history: model.promptHistory),
+                                  mode: Binding(get: { mode }, set: { chosen in
+                                      // Fixtures never act (DESIGN.md §8.3).
+                                      guard !model.isSyntheticRun else { return }
+                                      model.selectRightOptionMode(chosen)
+                                  })) {
+            TokensModelMenu(look: .home, store: speechModels, talking: talkingNow, talkingWith: talkingModelID,
+                            choose: chooseSpeechModel(id:), manage: { select(.models) },
+                            shown: TokensHomePreview.engine(model))
+        }
+    }
+
+    @ViewBuilder
+    private var homeTalks: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            heldRow
+            earlierRow
+            if !model.historyStorageError.isEmpty {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    TokensStatusDot(color: TokensUI.red)
+                    Text(model.historyStorageError)
+                        .font(TokensType.body)
+                        .foregroundStyle(TokensUI.ink2)
+                        .lineLimit(2)
+                }
+                .tokensOnRule()
+            } else if model.promptHistory.isEmpty {
+                TokensHomeFirstTalk(keyName: TokensHomePreview.keyName(model) ?? model.shortcutName,
+                                    tap: (TokensHomePreview.mode(model) ?? model.rightOptionMode) == .tap)
+            } else {
+                TokensHistoryCard(entries: Array(model.promptHistory.prefix(TokensHomeLayout.talkRows)),
+                                  model: model, previewLines: 1, grouped: true)
+                    .accessibilityLabel("Talks")
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /*
+    The newest talk's words that did not paste, as the list's first row (no
+    red "Paste unavailable" line): "Didn't paste" in red, the words' first line, then Copy, which
+    copies exactly those words (copyLatestTranscript puts them first). A talk kept on purpose is
+    already in the list below; a failure with no words shows its reason, no Copy.
+    */
+    @ViewBuilder
+    private var heldRow: some View {
+        let fixture = TokensHomePreview.heldText(model)
+        let stored = fixture ?? model.retainedFailureText
+        if !stored.isEmpty && stored != TalkModel.keptInAppMessage {
+            let words = fixture != nil ? "Move the reading list under the heading and keep the link."
+                                       : model.retainedFailurePayload
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                if words.isEmpty {
+                    TokensStatusDot(color: TokensUI.red)
+                    Text(TokensHomeNote.reason(stored))
+                        .foregroundStyle(TokensUI.ink2)
+                } else {
+                    Text("Didn't paste")
+                        .foregroundStyle(TokensUI.red)
+                        .fixedSize()
+                    Text(words)
+                        .foregroundStyle(TokensUI.ink)
+                        .truncationMode(.tail)
+                    Spacer(minLength: 8)
+                    Button(model.copyFeedbackKey == "latest" ? "Copied" : "Copy") {
+                        if !model.retainedFailurePayload.isEmpty { model.copyLatestTranscript() }
+                    }
+                    .buttonStyle(TokensLinkButtonStyle())
+                    .fixedSize()
+                    .help("Copy the words that did not paste")
+                    .accessibilityIdentifier("tokens.home.held-copy")
+                }
+            }
+            .font(TokensType.body)
+            .lineLimit(1)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .tokensOnRule()
+        }
+    }
+
+    /// An earlier talk that never landed, with Copy and Forget: Home is the only place it is offered.
+    @ViewBuilder
+    private var earlierRow: some View {
+        if let earlier = TokensHomePreview.earlierRecovery(model) ?? model.earlierRecovery {
+            let copied = model.copyFeedbackKey == TalkModel.earlierCopyKey(earlier)
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                // A Copy or Forget that could not be saved says so right here.
+                Text(copied ? "Earlier talk copied"
+                     : TokensHomePreview.earlierNote(model) ?? model.earlierRecoveryNote ?? "An earlier talk was not pasted")
+                    .foregroundStyle(TokensUI.ink2)
+                Spacer(minLength: 8)
+                if !copied {
+                    Button("Copy") { model.copyEarlierRecovery() }
+                        .buttonStyle(TokensLinkButtonStyle())
+                        .accessibilityIdentifier("tokens.home.earlier-copy")
+                    Button("Forget") { model.forgetEarlierRecovery() }
+                        .buttonStyle(TokensLinkButtonStyle())
+                        .accessibilityIdentifier("tokens.home.earlier-forget")
+                }
+            }
+            .font(TokensType.body)
+            .lineLimit(1)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .tokensOnRule()
+        }
     }
 
     /// Ready unless a grant or setup step blocks talking (or a proof render forces either state).
@@ -109,15 +230,7 @@ extension TokensHome {
         (homeReady || TokensPreview.forcesReady) && TokensHomePreview.blocker(model) == nil
     }
 
-    /// What the hero draws above the rule, so Recent asks for only the rows that fit (build 81).
-    var heroLines: TokensHomeHeroLines {
-        let held = shownHeld
-        return TokensHomeHeroLines(ready: heroReady, held: held.reason, heldCopy: held.copyable,
-                                   earlier: (TokensHomePreview.earlierRecovery(model) ?? model.earlierRecovery) != nil,
-                                   today: wordsTotal > 0)
-    }
-
-    /// "Hold [⌥ Left Option] to dictate" in the 17-point lead, the chip centred on the line.
+    /// "Then tap [⌥ Right Option] to talk" in the 17-point lead, the chip centred on the line.
     private func dictateLine(lead: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Text(lead)
@@ -130,17 +243,6 @@ extension TokensHome {
         .lineLimit(1)
         .help("Listening through " + model.effectiveInputDeviceName)
         .accessibilityElement(children: .contain)
-        .tokensOnRule()
-    }
-
-    /// "Speech model  Orukeet ⌃⌄": the model your words go through, switched right here (build 82).
-    private var engineLine: some View {
-        _ = storedSpeechEngine  // redraw when the choice changes
-        return TokensHomeEngineLine(store: speechModels, shown: TokensHomePreview.engine(model),
-                                    talking: talkingNow, talkingWith: talkingModelID,
-                                    choose: chooseSpeechModel(id:)) {
-            select(.models)
-        }
         .tokensOnRule()
     }
 
@@ -160,150 +262,12 @@ extension TokensHome {
         .accessibilityIdentifier("tokens.home.dictation-key")
     }
 
-    /*
-    Words held back by a failed paste, on the rule after the Speech model line: a red dot, the
-    reason in ink2 text at the 28-point pitch, then a quiet Copy that copies exactly those held
-    words. Build 81: the line used to end "· Copy latest", naming a control Home did not have
-    (the menu bar calls it Copy Last Talk). A talk kept in the app on purpose ("Saved to Recent
-    below") is information, so its dot and text are secondary, never red, and it has no Copy:
-    its Recent row right below copies it. A failure with no words (a key or microphone error)
-    has no Copy either.
-    */
-    @ViewBuilder
-    private var heldWordsLine: some View {
-        let held = shownHeld
-        if !held.reason.isEmpty {
-            let kept = held.reason == TalkModel.keptInAppMessage
-            // "latest" is the feedback key copyLatestTranscript sets, menu bar included.
-            let copied = model.copyFeedbackKey == "latest"
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                TokensStatusDot(color: kept ? TokensUI.secondary : TokensUI.red)
-                Text(held.reason)
-                    .font(TokensType.body)
-                    .foregroundStyle(kept ? TokensUI.secondary : TokensUI.ink2)
-                    .tokensReadingPitch()
-                    .fixedSize(horizontal: false, vertical: true)
-                if held.copyable {
-                    Button(copied ? "Copied" : "Copy") { copyHeldWords() }
-                        .buttonStyle(TokensLinkButtonStyle())
-                        .fixedSize()
-                        .help("Copy the words that did not paste")
-                        .accessibilityLabel(copied ? "Copied" : "Copy held words")
-                        .accessibilityIdentifier("tokens.home.held-copy")
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .tokensOnRule()
-        }
-    }
-
-    /// The held-words line as Home shows it: the reason, and whether there are words to copy.
-    private var shownHeld: (reason: String, copyable: Bool) {
-        let fixture = TokensHomePreview.heldText(model)
-        let reason = TokensHomeHeld.reason(fixture ?? model.retainedFailureText)
-        let words = fixture != nil || !model.retainedFailurePayload.isEmpty
-        return (reason, words && reason != TalkModel.keptInAppMessage)
-    }
-
-    /// Copy latest puts the held words first (TalkModel.latestTranscript), so this copies exactly
-    /// them; with nothing held it does nothing rather than copy some other talk.
-    private func copyHeldWords() {
-        guard !model.retainedFailurePayload.isEmpty else { return }
-        model.copyLatestTranscript()
-    }
-
-    /*
-    Words from an earlier talk that never landed, older than the newest talk (build 81): one quiet
-    line with Copy and Forget, so they stay reachable without taking Copy latest from the newest
-    talk. Copy resolves them; Forget is the only other way they go.
-    */
-    @ViewBuilder
-    private var earlierTalkLine: some View {
-        if let earlier = TokensHomePreview.earlierRecovery(model) ?? model.earlierRecovery {
-            let copied = model.copyFeedbackKey == TalkModel.earlierCopyKey(earlier)
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                TokensStatusDot(color: TokensUI.secondary)
-                // A Copy or Forget that could not be saved says so right here, whatever else Home shows.
-                Text(copied ? "Earlier talk copied"
-                     : TokensHomePreview.earlierNote(model) ?? model.earlierRecoveryNote ?? "An earlier talk was not pasted")
-                    .font(TokensType.body)
-                    .foregroundStyle(TokensUI.ink2)
-                    .lineLimit(1)
-                if !copied {
-                    Button("Copy") { model.copyEarlierRecovery() }
-                        .buttonStyle(TokensLinkButtonStyle())
-                        .accessibilityIdentifier("tokens.home.earlier-copy")
-                    Button("Forget") { model.forgetEarlierRecovery() }
-                        .buttonStyle(TokensLinkButtonStyle())
-                        .accessibilityIdentifier("tokens.home.earlier-forget")
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .tokensOnRule()
-        }
-    }
-
     /// Shared by Settings: persist a preset and move the existing bubble without showing it.
     func selectBubblePlacement(_ placement: BubblePlacement) {
         BubblePlacement.save(placement)
         bubblePlacement = placement
         if let window = compactWindow(), let visible = window.screen?.visibleFrame {
             BubbleWindowPlacement.apply(placement, to: window, visible: visible)
-        }
-    }
-
-    // MARK: Recent
-
-    /*
-    "Recent" (15 medium ink) with "See all ›" trailing, then one-line rows: as many as the sheet
-    shows below the hero (TokensHomeLayout.recentRows, 3 to 8). Rows show the time for today,
-    otherwise the day ("Yesterday", "Oct 10"). Today's counts live on the Today line above.
-    */
-    private var recentHome: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .firstTextBaseline, spacing: 0) {
-                Text("Recent")
-                    .font(TokensType.labelLarge)
-                    .foregroundStyle(TokensUI.ink)
-                    .accessibilityAddTraits(.isHeader)
-                Spacer(minLength: 12)
-                if !model.promptHistory.isEmpty {
-                    Button { select(.history) } label: {
-                        HStack(alignment: .firstTextBaseline, spacing: 3) {
-                            Text("See all")
-                            Image(systemName: "chevron.right").font(.system(size: 10, weight: .medium))
-                        }
-                    }
-                    .font(TokensType.caption)
-                    .buttonStyle(TokensLinkButtonStyle(tone: .quiet))
-                    .accessibilityLabel("See all")
-                    .accessibilityIdentifier("tokens.home.see-all")
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .tokensOnRule()
-            if model.promptHistory.isEmpty {
-                if model.historyStorageError.isEmpty {
-                    Text("Your words, kept here")
-                        .font(TokensType.body)
-                        .foregroundStyle(TokensUI.secondary)
-                        .tokensOnRule()
-                } else {
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        TokensStatusDot(color: TokensUI.red)
-                        Text(model.historyStorageError)
-                            .font(TokensType.body)
-                            .foregroundStyle(TokensUI.ink2)
-                            .tokensReadingPitch()
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .tokensOnRule()
-                }
-            } else {
-                TokensHomeRecentRows(model: model, hero: heroLines)
-                    .accessibilityLabel("Recent")
-            }
         }
     }
 
@@ -401,50 +365,14 @@ enum TokensHomeHeroStart {
 }
 
 /*
-Home's measures. The column is up to 14 squares (784) so Recent fills the sheet; TokensColumn
-still centres it on the rules and keeps a square of margin. Recent shows the rows that land
-above the resting edge. The page slot starts on rule 1 and the hero fills whole squares from
-there, so in the plain Ready layout the heading is rule 2, the dictate line 3, Speech model 4,
-Today 5, the board's rule 6, "Recent" 7 and the first row ends on rule 8. Build 81: the build-80
-Speech model line and the held-words and earlier-talk lines each push Recent down a square, and
-the budget used to ignore them, so one row too many sat hidden under the bottom edge. At least
-3 rows (shorter sheets scroll), at most 8.
+Home's measures. Home's column starts where every other page's does and may run up to 14
+squares wide. The talks list scrolls with the page, so there is no row budget.
 */
 enum TokensHomeLayout {
     static let columnMaxWidth: CGFloat = 14 * TokensUI.paperCell
-    static let minRows = 3
-    static let maxRows = 8
-    /// The plain Ready hero: heading, dictate line, Speech model line and Today line.
-    static let readyHeroCells = 4
-    /// Where the first row ends below the plain Ready hero (rule 8).
-    static var firstRowRule: Int { firstRowRule(heroCells: readyHeroCells) }
-
-    /// The hero's squares from rule 1, then the board's rule, "Recent" and the first row.
-    static func firstRowRule(heroCells: Int) -> Int { 1 + heroCells + 3 }
-
-    /*
-    The hero's squares, counted from the same conditions that draw it (homeHero). Blocked: the
-    heading, the blocker, "Then hold [key] to talk" and Speech model; the blocker counts as one
-    square because it only wraps in columns so narrow that Recent is already at its 3-row
-    minimum. Ready: heading, dictate, Speech model, then the held-words line (more squares when
-    its reason wraps at the 28-point pitch), the earlier-talk line and the Today line when shown.
-    */
-    static func heroCells(_ hero: TokensHomeHeroLines, columnWidth: CGFloat) -> Int {
-        guard hero.ready else { return 4 }
-        var cells = 3 + (hero.earlier ? 1 : 0) + (hero.today ? 1 : 0)
-        if !hero.held.isEmpty {
-            // The dot and its gap take 14 points; the quiet Copy at most a square.
-            let words = columnWidth - 14 - (hero.heldCopy ? TokensUI.paperCell : 0)
-            cells += heldCells(hero.held, width: words)
-        }
-        return cells
-    }
-
-    /// Lines at the 28-point pitch: one line is one square, two or three are two, more are three.
-    static func heldCells(_ text: String, width: CGFloat) -> Int {
-        guard TokensHistoryRowLayout.isTruncated(text, width: width, lineLimit: 1, size: 15) else { return 1 }
-        return TokensHistoryRowLayout.isTruncated(text, width: width, lineLimit: 3, size: 15) ? 3 : 2
-    }
+    /// Home lists at most this many talks; History has the rest. Home redraws while a talk records,
+    /// so the list stays short (build 83 CPU fix).
+    static let talkRows = 12
 
     /*
     Home's column starts where every other page's does (TokensColumn's leading edge), so switching
@@ -458,34 +386,11 @@ enum TokensHomeLayout {
         return (page.leading, min(columnMaxWidth, max(page.width, room)))
     }
 
-    static func recentRows(sheetHeight: CGFloat, heroCells: Int = readyHeroCells) -> Int {
-        let lastRule = Int(floor((sheetHeight - TokensRestingEdgeMask.below) / TokensUI.paperCell))
-        return min(maxRows, max(minRows, lastRule - firstRowRule(heroCells: heroCells) + 1))
-    }
 }
 
-/*
-What Home's hero draws above the board's rule, for Recent's row budget. A live talk keeps the
-count of the hero it replaces, so Recent does not reshuffle while you talk; rows it pushes under
-the bottom edge take no clicks (tokensQuietUnderRestingEdge).
-*/
-struct TokensHomeHeroLines: Equatable {
-    var ready = true
-    /// The held-words reason as shown, empty when there is none.
-    var held = ""
-    var heldCopy = false
-    var earlier = false
-    var today = true
-}
-
-/*
-Home's held-words reason (build 81): the stored message without its trailing copy hint
-(" · Copy latest" names the menu bar's command), because the line carries its own Copy. The
-stored text stays as it is: the recovery pop-up matches on it.
-*/
-enum TokensHomeHeld {
+/// A stored failure reason without its menu-bar copy hint (" · Copy latest"), for Home's note.
+enum TokensHomeNote {
     static let copyHints = [" · Copy latest", " · Copy captured words"]
-
     static func reason(_ message: String) -> String {
         for hint in copyHints where message.hasSuffix(hint) { return String(message.dropLast(hint.count)) }
         return message
@@ -506,19 +411,361 @@ struct TokensHomeColumn: ViewModifier {
     }
 }
 
-/// Recent's rows: the newest entries, as many as TokensHomeLayout fits below this hero on this
-/// sheet. The count reads tokensSheetSize from the environment, never a GeometryReader (§8.1).
-struct TokensHomeRecentRows: View {
-    @ObservedObject var model: TalkModel
-    let hero: TokensHomeHeroLines
-    @Environment(\.tokensSheetSize) private var sheet
+/*
+Build 83 resting head (approved mock): "Tap [⌥ Right Option] to talk" in the
+title size on the first rule. The verb is the tap/hold switch: dashed-underlined, a click flips
+"Tap" and "Hold" (the same preference as Settings). The key chip opens the key picker. Under it,
+the same space the live block takes (TokensHomeLiveLayout): a resting chalk line where the wave
+rises, a faint quote where the words will be written, and the stop line's empty rule. Starting a
+talk changes what is drawn, never where the talks below sit.
+*/
+enum TokensHomeLiveLayout {
+    static let waveCells: CGFloat = 1
+    /// The words: the newest four lines at the 28-point pitch.
+    static let wordsCells: CGFloat = 2
+    static let wordsLines = 4
+    /// What the resting space says (a short quote, "Solve Navier–Stokes.").
+    static let restingQuote = "\u{201C}Solve Navier\u{2013}Stokes.\u{201D}"
+}
+
+struct TokensHomeRestHead<Chip: View>: View {
+    let keyName: String
+    let tap: Bool
+    @ViewBuilder let chip: () -> Chip
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text(tap ? "Tap" : "Hold")
+                chip()
+                    .tokensControlOnBaseline()
+                Text("to talk")
+            }
+            .font(TokensType.title)
+            .foregroundStyle(TokensUI.ink)
+            .lineLimit(1)
+            .tokensOnRule()
+            // The live block's shape exactly (TokensHomeLiveLayout), so starting a talk moves nothing.
+            TokensChalkWave(samples: [], live: true, confirmed: false)
+                .frame(height: TokensHomeLiveLayout.waveCells * TokensUI.paperCell)
+            Text(TokensHomeLiveLayout.restingQuote)
+                .font(TokensType.lead)
+                .foregroundStyle(TokensUI.secondary.opacity(0.7))
+                .lineLimit(1)
+                .tokensReadingPitch(size: 17)
+                .tokensOnRule()
+                .frame(height: TokensHomeLiveLayout.wordsCells * TokensUI.paperCell, alignment: .top)
+            TokensRuleSpacer()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("tokens.home.hero")
+    }
+}
+
+/*
+The waveform drawn like chalk on graph paper. Resting: one hand-drawn line on the frame's bottom rule.
+Live: that same line bends with your voice, one smooth stroke.
+Ink colour, so it is white chalk on the dark themes and pencil on Paper. It only draws the
+existing input envelope; no second microphone session.
+*/
+struct TokensChalkWave: View {
+    let samples: [Double]
+    let live: Bool
+    var confirmed = true
+
+    /// A fixed, per-index wobble in -1...1 (no randomness, so a redraw never flickers).
+    static func wobble(_ index: Int, _ salt: Double) -> Double {
+        let x = sin(Double(index) * 12.9898 + salt * 78.233) * 43758.5453
+        return (x - x.rounded(.down)) * 2 - 1
+    }
+
+    var body: some View {
+        Canvas { context, size in
+            let ink = TokensUI.ink
+            if !live || !confirmed {
+                // One chalk line, gently uneven, on the bottom rule (resting) or the middle (arming).
+                let y = live ? size.height / 2 : size.height - 1
+                var line = Path()
+                line.move(to: CGPoint(x: 0, y: y))
+                var x: CGFloat = 0
+                var index = 0
+                while x < size.width {
+                    x = min(size.width, x + 6)
+                    line.addLine(to: CGPoint(x: x, y: y + CGFloat(Self.wobble(index, 1)) * 0.6))
+                    index += 1
+                }
+                context.stroke(line, with: .color(ink.opacity(0.42)),
+                               style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
+                return
+            }
+            /*
+            Live: one smooth line that
+            traces the voice. The resting line's own stroke, bent by a gentle carrier whose height
+            follows the input envelope, interpolated between samples so it never steps.
+            */
+            let raw = samples.suffix(96).map { $0.isFinite ? min(1, max(0, $0)) : 0 }
+            // A light five-point average, so a sudden level step bends the line instead of kinking it.
+            let source = raw.indices.map { i -> Double in
+                let window = raw[max(0, i - 2)...min(raw.count - 1, i + 2)]
+                return window.reduce(0, +) / Double(window.count)
+            }
+            let mid = size.height / 2
+            let reach = mid - 3
+            func envelope(at x: CGFloat) -> Double {
+                guard source.count > 1 else { return source.first ?? 0 }
+                let position = Double(x / max(1, size.width)) * Double(source.count - 1)
+                let low = Int(position.rounded(.down)), high = min(source.count - 1, low + 1)
+                let fraction = position - Double(low)
+                return source[low] * (1 - fraction) + source[high] * fraction
+            }
+            var line = Path()
+            var x: CGFloat = 0
+            while x <= size.width {
+                let y = mid + CGFloat(sin(Double(x) * 0.16)) * CGFloat(envelope(at: x)) * reach
+                if x == 0 { line.move(to: CGPoint(x: x, y: y)) } else { line.addLine(to: CGPoint(x: x, y: y)) }
+                x += 2
+            }
+            context.stroke(line, with: .color(ink.opacity(0.9)),
+                           style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
+        }
+        .allowsHitTesting(false)
+        .accessibilityLabel(live ? (confirmed ? "Microphone waveform" : "Microphone arming") : "Ready to talk")
+    }
+}
+
+/// The talks beside the side card when Home's column has room for both (at least 6 squares of
+/// talks), else the talks alone. Widths come from tokensSheetSize, never a GeometryReader (§8.1).
+struct TokensHomeBoard<Talks: View, Card: View>: View {
+    @ViewBuilder let talks: () -> Talks
+    @ViewBuilder let card: () -> Card
+    @Environment(\.tokensSheetSize) private var sheet
+
+    static var cardCells: CGFloat { 4 }
+    static func showsCard(columnWidth: CGFloat) -> Bool {
+        columnWidth >= (6 + cardCells + 0.5) * TokensUI.paperCell
+    }
+
+    var body: some View {
+        let cell = TokensUI.paperCell
         let column = TokensHomeLayout.column(sheetWidth: sheet.width).width
-        let rows = TokensHomeLayout.recentRows(sheetHeight: sheet.height,
-                                               heroCells: TokensHomeLayout.heroCells(hero, columnWidth: column))
-        TokensHistoryCard(entries: Array(model.promptHistory.prefix(rows)),
-                          model: model, previewLines: 1, grouped: false)
+        if Self.showsCard(columnWidth: column) {
+            HStack(alignment: .top, spacing: 0) {
+                talks().frame(width: column - (Self.cardCells + 0.5) * cell)
+                TokensDottedRule(vertical: true)
+                    .frame(width: cell / 2)
+                card().frame(width: Self.cardCells * cell)
+            }
+        } else {
+            talks()
+        }
+    }
+}
+
+/// A dotted chalk line, like the paste marker's corners: the one divider Home uses instead of boxes.
+struct TokensDottedRule: View {
+    var vertical = false
+    var body: some View {
+        Canvas { context, size in
+            var line = Path()
+            if vertical {
+                line.move(to: CGPoint(x: size.width / 2, y: 0)); line.addLine(to: CGPoint(x: size.width / 2, y: size.height))
+            } else {
+                line.move(to: CGPoint(x: 0, y: size.height / 2)); line.addLine(to: CGPoint(x: size.width, y: size.height / 2))
+            }
+            context.stroke(line, with: .color(TokensUI.secondary.opacity(0.55)),
+                           style: StrokeStyle(lineWidth: 1.6, lineCap: .round, dash: [0.01, 5]))
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+}
+
+struct TokensHomeModeSwitch: View {
+    @Binding var mode: RightOptionMode
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            word(.tap, "Tap")
+            Text("·").foregroundStyle(TokensUI.secondary)
+            word(.hold, "Hold")
+        }
+        .font(TokensType.body)
+        .fixedSize()
+    }
+
+    private func word(_ option: RightOptionMode, _ label: String) -> some View {
+        let on = mode == option
+        return Button(label) { mode = option }
+            .buttonStyle(.plain)
+            .fontWeight(on ? .medium : .regular)
+            .foregroundStyle(on ? TokensUI.ink : TokensUI.secondary)
+            .accessibilityLabel(option == .tap ? "Tap to talk" : "Hold to talk")
+            .accessibilityAddTraits(on ? [.isButton, .isSelected] : .isButton)
+            .accessibilityIdentifier("tokens.home.talk-mode.\(label.lowercased())")
+    }
+}
+
+/// The side card's numbers, from saved talks only (Stats' rules: words as Home counts them, speed
+/// only from receipt-stated wpm, never estimated).
+struct TokensHomeCardSummary: Equatable {
+    var weekWords = 0
+    var usualWPM: Int?
+    var streakDays = 0
+    var hasTalks = false
+
+    static func make(history: [PromptHistoryEntry], now: Date = Date(),
+                     calendar: Calendar = .current) -> TokensHomeCardSummary {
+        guard !history.isEmpty else { return TokensHomeCardSummary() }
+        let today = calendar.startOfDay(for: now)
+        let weekStart = calendar.date(byAdding: .day, value: -6, to: today) ?? today
+        let speedStart = calendar.date(byAdding: .day, value: -13, to: today) ?? today
+        let recent = history.filter { $0.createdAt >= speedStart }
+        let speeds = TokensStatsSource.entries(recent, events: [], now: now, appName: { _ in nil })
+            .compactMap { $0.record?.wpm }
+        let week = history.filter { $0.createdAt >= weekStart }.reduce(0) { $0 + TokensHistoryText.words($1) }
+        return TokensHomeCardSummary(weekWords: week, usualWPM: median(speeds),
+                                     streakDays: streak(days: history.map(\.createdAt), now: now, calendar: calendar),
+                                     hasTalks: true)
+    }
+
+    /*
+    Home redraws on every microphone level while a talk records; make() reads two weeks of
+    receipts, so redoing it per frame pinned Tokens at 100% CPU (UX review). The numbers
+    only change with the history or the day, so one copy is kept for that key.
+    */
+    private static var memo: (key: String, summary: TokensHomeCardSummary)?
+    @MainActor static func cached(history: [PromptHistoryEntry], now: Date = Date(),
+                                  calendar: Calendar = .current) -> TokensHomeCardSummary {
+        let key = "\(history.count)|\(history.first?.id.uuidString ?? "-")|\(history.last?.id.uuidString ?? "-")|"
+            + "\(Int(calendar.startOfDay(for: now).timeIntervalSince1970))"
+        if let memo, memo.key == key { return memo.summary }
+        let summary = make(history: history, now: now, calendar: calendar)
+        memo = (key, summary)
+        return summary
+    }
+
+    static func median(_ values: [Int]) -> Int? {
+        guard !values.isEmpty else { return nil }
+        let sorted = values.sorted()
+        let middle = sorted.count / 2
+        return sorted.count % 2 == 1 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2
+    }
+
+    /// Days in a row with at least one talk, ending today, or yesterday when today has none yet.
+    static func streak(days: [Date], now: Date, calendar: Calendar) -> Int {
+        let talked = Set(days.map { calendar.startOfDay(for: $0) })
+        var day = calendar.startOfDay(for: now)
+        if !talked.contains(day) { day = calendar.date(byAdding: .day, value: -1, to: day) ?? day }
+        var count = 0
+        while talked.contains(day) {
+            count += 1
+            guard let previous = calendar.date(byAdding: .day, value: -1, to: day) else { break }
+            day = previous
+        }
+        return count
+    }
+}
+
+/*
+Home's side card (approved mock): words this week, usual speed and streak, each value in
+the title size with its label after it on one rule, then two labelled controls: Model (the
+speech-model menu, plain text) and Talk ("Tap · Hold", the same preference as Settings). No
+outline: a dotted line separates it from the talks. A thin rounded
+edge. Before any talk: "0 words so far" and one line saying speed and streak start with the
+first talk.
+*/
+struct TokensHomeSideCard<Menu: View>: View {
+    let summary: TokensHomeCardSummary
+    @Binding var mode: RightOptionMode
+    @ViewBuilder let menu: () -> Menu
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if summary.hasTalks {
+                stat(summary.weekWords.formatted(), summary.weekWords == 1 ? "word this week" : "words this week")
+                stat(summary.usualWPM.map { "\($0)" } ?? "–", "words a minute")
+                stat("\(summary.streakDays)", summary.streakDays == 1 ? "day in a row" : "days in a row")
+            } else {
+                stat("0", "words so far")
+                Text("Speed and streak start with your first talk.")
+                    .font(TokensType.caption)
+                    .foregroundStyle(TokensUI.secondary)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .tokensOnRule()
+            }
+            // Model selection and tap/hold mode use plain labelled controls.
+            control("Model") { menu() }
+            control("Talk") { TokensHomeModeSwitch(mode: $mode) }
+        }
+        .padding(.leading, 16)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("tokens.home.side-card")
+    }
+
+    private func control<Content: View>(_ label: String, @ViewBuilder _ content: () -> Content) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Text(label)
+                .font(TokensType.caption)
+                .foregroundStyle(TokensUI.secondary)
+            Spacer(minLength: 8)
+            content()
+                .tokensControlOnBaseline()
+        }
+        .lineLimit(1)
+        .tokensOnRule()
+    }
+
+    private func stat(_ value: String, _ label: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Text(value)
+                .font(TokensType.title.monospacedDigit())
+                .foregroundStyle(TokensUI.ink)
+            Text(label)
+                .font(TokensType.caption)
+                .foregroundStyle(TokensUI.secondary)
+        }
+        .lineLimit(1)
+        .tokensOnRule()
+    }
+}
+
+/*
+First launch (no talks yet, approved mock): "Try your first talk" and three short steps,
+then where talks will appear. No placeholder inside the wave.
+*/
+struct TokensHomeFirstTalk: View {
+    let keyName: String
+    let tap: Bool
+
+    static func steps(keyName: String, tap: Bool) -> [String] {
+        ["1   Click into any text box: Notes, Mail, Codex.",
+         "2   " + (tap ? "Tap " : "Hold ") + keyName + " and say a sentence.",
+         tap ? "3   Tap it again. Your words paste right there." : "3   Let go. Your words paste right there."]
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Try your first talk")
+                .font(TokensType.labelLarge)
+                .foregroundStyle(TokensUI.ink)
+                .tokensOnRule()
+            // One rule each (a Group would hand all three to one rule and stack them).
+            ForEach(Self.steps(keyName: keyName, tap: tap), id: \.self) { step in
+                Text(step)
+                    .font(TokensType.body)
+                    .foregroundStyle(TokensUI.secondary)
+                    .lineLimit(1)
+                    .tokensOnRule()
+            }
+            Text("Your talks will be listed here, by day.")
+                .font(TokensType.caption)
+                .foregroundStyle(TokensUI.secondary)
+                .tokensOnRule()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("tokens.home.first-talk")
     }
 }
 
@@ -557,6 +804,8 @@ changes what a button does.
                                                             or a stop that keeps the words
   --home-preview-held failed|kept                           the held-words line (with --public-preview-ready)
   --home-preview-history full                               ten fictional talks, six of them timed today
+  --home-preview-key left-option|right-command|globe|f5     the talk key Home's keycap draws (build 83)
+  --home-preview-mode tap|hold                              the key mode Home's words and link follow (build 83)
 */
 enum TokensHomePreview {
     enum Blocker: String { case access, relaunch, mic, speech, setup }
@@ -579,6 +828,14 @@ enum TokensHomePreview {
     private static let historyFlag = value(after: "--home-preview-history").flatMap(History.init(rawValue:))
 
     static func blocker(_ model: TalkModel) -> Blocker? { model.isSyntheticRun ? blockerFlag : nil }
+    /// "right-command" → "Right Command"; "f5" → "F5".
+    static func keyName(_ model: TalkModel) -> String? {
+        guard model.isSyntheticRun, let raw = value(after: "--home-preview-key") else { return nil }
+        return raw.split(separator: "-").map { $0.prefix(1).uppercased() + $0.dropFirst() }.joined(separator: " ")
+    }
+    static func mode(_ model: TalkModel) -> RightOptionMode? {
+        model.isSyntheticRun ? value(after: "--home-preview-mode").flatMap(RightOptionMode.init(rawValue:)) : nil
+    }
     /// --home-preview-engine <id>:<ready|paused|none|percent>, render proofs of the speech-model line.
     static func engine(_ model: TalkModel) -> TokensHomeEngine? {
         guard model.isSyntheticRun, let raw = value(after: "--home-preview-engine") else { return nil }
@@ -694,7 +951,7 @@ struct TokensHomeLiveControls: Equatable {
 
 /*
 While a talk runs, Home's hero lines become this block, with no card: a dot and "Listening"
-(or "Finishing…"), the red level band centred in the next square, the newest six lines of
+(or "Finishing…"), the chalk wave in the next square, the newest four lines of
 words at the 28-point pitch, and how to stop. It only observes the existing capture stream; it
 never starts a capture or a second microphone session. While Listening, quiet Stop and Discard
 links trail the first rule like Recent's See all (TOK-QA-005): Stop (after the first audio) keeps
@@ -713,14 +970,14 @@ struct TokensHomeLiveCard: View {
     @State private var textWidth: CGFloat = 0
 
     static let stopTitle = "Stop"
-    static let stopHelp = "Stop and keep the words in Recent"
+    static let stopHelp = "Stop and keep the words in History"
     static let stopLabel = "Stop talk"
-    static let stopHint = "Keeps the words in Recent. Nothing is pasted."
+    static let stopHint = "Keeps the words in History. Nothing is pasted."
     static let discardTitle = "Discard"
     static let discardHelp = "End this talk without pasting or saving the words"
     static let discardLabel = "Discard talk"
     static let discardHint = "Ends this talk. The words are not pasted or saved."
-    static let keptCaption = "Your words will be saved to Recent."
+    static let keptCaption = "Your words will be saved to History."
 
     /// The line under the words: how to stop, or where the words go once finishing.
     static func stopLine(phase: TalkPhase, mode: RightOptionMode, keyName: String, keepsInApp: Bool) -> String {
@@ -731,9 +988,10 @@ struct TokensHomeLiveCard: View {
     private static let liveFont = NSFont.systemFont(ofSize: 17)
 
     private var shownText: String {
-        // The newest six measured lines, so a long talk keeps its latest words in view.
+        // The newest measured lines (four), so a long talk keeps its latest words in view.
         let tail = textWidth > 0
-            ? latestMeasuredLines(in: text, font: Self.liveFont, width: max(1, textWidth - 12), count: 6)
+            ? latestMeasuredLines(in: text, font: Self.liveFont, width: max(1, textWidth - 12),
+                                count: TokensHomeLiveLayout.wordsLines)
             : text
         return tail + (hint.isFinishing ? "" : "│")
     }
@@ -794,22 +1052,28 @@ struct TokensHomeLiveCard: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .tokensOnRule()
-            TokensHomeWaveform(samples: samples, confirmed: confirmed)
+            TokensChalkWave(samples: samples, live: true, confirmed: confirmed)
                 .frame(maxWidth: .infinity)
-                .frame(height: 32)
-                .frame(height: TokensUI.paperCell)
-            if !text.isEmpty {
-                Text(Self.styled(shownText))
-                    .font(TokensType.lead)
-                    .foregroundStyle(TokensUI.ink)
-                    .lineLimit(6)
-                    .tokensReadingPitch(size: 17)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .accessibilityLabel("Live transcript")
-                    .accessibilityValue(String(Self.styled(text).characters))
-                    .tokensOnRule()
+                .frame(height: TokensHomeLiveLayout.waveCells * TokensUI.paperCell)
+            // Always the same three squares, so the talks below never move (build 83). A ZStack, not
+            // a Group: an empty Group took its frame with it, so the list jumped up before the
+            ZStack(alignment: .topLeading) {
+                Color.clear
+                if !text.isEmpty {
+                    Text(Self.styled(shownText))
+                        .font(TokensType.lead)
+                        .foregroundStyle(TokensUI.ink)
+                        .lineLimit(TokensHomeLiveLayout.wordsLines)
+                        .tokensReadingPitch(size: 17)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .accessibilityLabel("Live transcript")
+                        .accessibilityValue(String(Self.styled(text).characters))
+                        .tokensOnRule()
+                }
             }
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+            .frame(height: TokensHomeLiveLayout.wordsCells * TokensUI.paperCell, alignment: .top)
             Text(Self.stopLine(phase: hint.phase, mode: hint.mode, keyName: keyName, keepsInApp: keepsInApp))
                 .font(TokensType.caption)
                 .foregroundStyle(TokensUI.secondary)
@@ -828,36 +1092,6 @@ struct TokensHomeLiveCard: View {
         .accessibilityIdentifier("tokens.home.live-center")
     }
 }
-
-/// The existing input envelope as a band of 2pt red bars with 2pt gaps, drawn without an invented
-/// oscillation or a second microphone session. Silence shows as a faint dotted baseline.
-struct TokensHomeWaveform: View {
-    let samples: [Double]
-    let confirmed: Bool
-    var body: some View {
-        Canvas { context, size in
-            let bar: CGFloat = 2, gap: CGFloat = 2
-            let count = max(1, Int((size.width + gap) / (bar + gap)))
-            let source = confirmed ? samples.suffix(96).map { $0.isFinite ? min(1, max(0, $0)) : 0 } : []
-            let mid = size.height / 2
-            for index in 0..<count {
-                // Stretch the newest envelope across the band; the oldest sample sits at the left.
-                var value = 0.0
-                if !source.isEmpty {
-                    let position = Int(Double(index) / Double(count) * Double(source.count))
-                    value = source[min(source.count - 1, max(0, position))]
-                }
-                let height = max(bar, CGFloat(value) * size.height)
-                let rect = CGRect(x: CGFloat(index) * (bar + gap), y: mid - height / 2, width: bar, height: height)
-                context.fill(Path(roundedRect: rect, cornerRadius: bar / 2),
-                             with: .color(value > 0.02 ? TokensUI.red : TokensUI.red.opacity(0.22)))
-            }
-        }
-        .allowsHitTesting(false)
-        .accessibilityLabel(confirmed ? "Microphone waveform" : "Microphone arming")
-    }
-}
-
 
 /// Presentation follows the real shortcut edges. Finalizing ignores keys, so it must
 /// show a waiting state instead of asking for a second stop or a new recording.

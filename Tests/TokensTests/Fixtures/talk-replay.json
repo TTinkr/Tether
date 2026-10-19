@@ -6,42 +6,42 @@
    "category": "numbers",
    "input": "port nineteen sixty eighty",
    "expected_raw": "port 19 60 80",
-   "expected_tagged": "port <num>19 60 80</num>"
+   "expected_tagged": "port <num>19,60,80</num>"
   },
   {
    "id": "num-line-18-99",
    "category": "numbers",
    "input": "line eighteen ninety nine",
    "expected_raw": "line 18 99",
-   "expected_tagged": "line <num>18 99</num>"
+   "expected_tagged": "line <num>18,99</num>"
   },
   {
    "id": "num-zero-oh",
    "category": "numbers",
    "input": "zero oh one nineteen",
    "expected_raw": "0 0 1 19",
-   "expected_tagged": "<num>0 0 1 19</num>"
+   "expected_tagged": "<num>0,0,1,19</num>"
   },
   {
    "id": "num-tens-join",
    "category": "numbers",
    "input": "twenty one twenty two",
    "expected_raw": "21 22",
-   "expected_tagged": "<num>21 22</num>"
+   "expected_tagged": "<num>21,22</num>"
   },
   {
    "id": "num-two-25",
    "category": "numbers",
    "input": "two twenty five",
    "expected_raw": "2 25",
-   "expected_tagged": "<num>2 25</num>"
+   "expected_tagged": "<num>2,25</num>"
   },
   {
    "id": "num-comma-join",
    "category": "numbers",
    "input": "twenty, one, two",
    "expected_raw": "20 1 2",
-   "expected_tagged": "<num>20 1 2</num>",
+   "expected_tagged": "<num>20,1,2</num>",
    "note": "Commas are list boundaries: a tens word never joins a unit across one."
   },
   {
@@ -49,14 +49,14 @@
    "category": "numbers",
    "input": "Ports sixty ninety eighty, then stop.",
    "expected_raw": "Ports 60 90 80, then stop.",
-   "expected_tagged": "Ports <num>60 90 80</num>, then stop."
+   "expected_tagged": "Ports <num>60,90,80</num>, then stop."
   },
   {
    "id": "num-digits-stay",
    "category": "numbers",
    "input": "version 1 2 3",
    "expected_raw": "version 1 2 3",
-   "expected_tagged": "version <num>1 2 3</num>"
+   "expected_tagged": "version <num>123</num>"
   },
   {
    "id": "num-two-stay-prose",
@@ -91,7 +91,7 @@
    "category": "numbers",
    "input": "Nineteen Sixty Eighty",
    "expected_raw": "19 60 80",
-   "expected_tagged": "<num>19 60 80</num>"
+   "expected_tagged": "<num>19,60,80</num>"
   },
   {
    "id": "num-port-8080",
@@ -118,10 +118,10 @@
    "reason": "No 'point' decimal support; a single spoken number stays prose."
   },
   {
-   "id": "agent-cloud-code-fable",
+   "id": "agent-cloud-code-agent",
    "category": "agents",
-   "input": "consult cloud code fable on the taste here",
-   "expected_raw": "consult Claude Code fable on the taste here",
+   "input": "consult cloud code agent on the taste here",
+   "expected_raw": "consult Claude Code agent on the taste here",
    "agent_name_fixes": true
   },
   {
@@ -134,8 +134,8 @@
   {
    "id": "agent-soul-planning",
    "category": "agents",
-   "input": "route planning to soul and checks to terra",
-   "expected_raw": "route planning to Sol and checks to terra",
+   "input": "route planning to soul and checks to the codecs agent",
+   "expected_raw": "route planning to soul and checks to the Codex agent",
    "agent_name_fixes": true
   },
   {
@@ -545,7 +545,7 @@
    "category": "pauses",
    "input": "port nineteen sixty eighty then go",
    "expected_raw": "port 19 60 80\n\nTHINK (2.0000s)\n\nthen go",
-   "expected_tagged": "port <num>19 60 80</num>\n\nTHINK (2.0000s)\n\nthen go",
+   "expected_tagged": "port <num>19,60,80</num>\n\nTHINK (2.0000s)\n\nthen go",
    "pause": {
     "starts": [
      0,

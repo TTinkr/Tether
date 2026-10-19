@@ -101,11 +101,10 @@ extension TalkModel {
             if !publicTokens {
                 showPauseAside(explicit: true)
                 pauseAsides.begin(sessionID: sessionID)
-                temple.begin()
             }
         }
         phase = .capturing
-        startDestinationPreview()
+        syncDestinationPreview()
         Diagnostics.event(
             "capture_begin session=\(sessionID?.uuidString ?? "none") mode=\(rightOptionMode.rawValue)"
         )
@@ -202,10 +201,6 @@ extension TalkModel {
         // Capture destination BEFORE hiding a window can change foreground focus.
         if !stopTarget.captured {
             stopTarget.capture {
-                guard !temple.isEditingNotes else {
-                    Diagnostics.event("delivery_held reason=editing_thinking_notes")
-                    return nil
-                }
                 guard input.deliveryEdgeIsCurrent() else {
                     Diagnostics.event("delivery_held reason=focus_changed_since_key_edge")
                     return nil

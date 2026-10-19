@@ -265,8 +265,10 @@ import Testing
         patient.speechResumed()                                              // cancelled before its first token
         patient.pauseBegan(transcript: talk + " and more words arrive here"); await wait(60)
         precondition(patientFake.calls[.reflection] == 1, "still inside the interval")
-        await wait(500)
-        precondition(patientFake.calls[.reflection] == 2 && !patient.reflection.text.isEmpty, "the long pause got its reflection")
+        let reflectionArrived = await waitUntil {
+            patientFake.calls[.reflection] == 2 && !patient.reflection.text.isEmpty
+        }
+        precondition(reflectionArrived, "the long pause got its reflection")
         patient.end()
         // A clean answer with no usable line counts as a failure and is not sent again for the same words.
         let uselessFake = FakeThinking(); uselessFake.outputs[.reflection] = "TITLE: x\nSUMMARY: you are thinking about http instructions.\n"

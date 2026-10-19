@@ -93,8 +93,8 @@ def check_orukeet_options(args):
     assets = getattr(args, "orukeet_assets", None)
     if enabled and args.mode == "distribution":
         raise RuntimeError(
-            "Orukeet distribution is disabled: the pinned SDK includes SentencePiece 0.2.0 "
-            "affected by CVE-2026-1260. Pin and verify a patched SDK before distributing it. "
+            "Orukeet distribution is disabled pending independent qualification of the rebuilt SDK. "
+            "The prior SDK was affected by CVE-2026-1260. Verify the replacement before distributing it. "
             "Preview/dev builds remain available for local review of the pinned inputs.")
     if enabled != bool(assets):
         raise RuntimeError("Orukeet requires both --enable-orukeet and --orukeet-assets.")

@@ -50,3 +50,33 @@ struct PasteAcknowledgementTests {
         }
     }
 }
+
+@Suite struct ClaudeMultiLinePasteTests {
+    // UX review: Claude counts carets without line breaks; multi-line pastes must still verify.
+    static let talk = "Oh good\n[thinking 1.91s] it shows\n— π [147 wpm, 89.14s, 18 characters]"
+    static func skip(_ s: String) -> Int { s.utf16.filter { $0 != 10 }.count }
+    static func check(_ before: String, at: Int, after: String, caret: Int) -> PasteAcknowledgement.Result {
+        PasteAcknowledgement.evaluate(before: before, selection: NSRange(location: at, length: 0), inserted: talk,
+            after: after, caret: NSRange(location: caret, length: 0), richComposer: true, caretSkipsLineBreaks: true)
+    }
+
+    @Test func emptyComposerAndTypedDraftBothVerify() {
+        // Measured: empty Claude composer reads "\n"; caret after the paste skips its line breaks.
+        #expect(Self.check("\n", at: 0, after: Self.talk, caret: Self.skip(Self.talk)) == .verified)
+        let draft = "typed line one\nline two\n"
+        let after = "typed line one\nline two\n\n" + Self.talk  // Claude adds a break at the join
+        #expect(Self.check(draft, at: Self.skip(draft), after: after, caret: Self.skip(after)) == .verified)
+    }
+
+    @Test func wrongCharactersPlaceOrCaretStillFail() {
+        let draft = "typed line\n"
+        let at = Self.skip(draft)
+        #expect(Self.check(draft, at: at, after: draft + Self.talk.replacingOccurrences(of: "good", with: "god"),
+                           caret: at + Self.skip(Self.talk) - 1) != .verified)
+        #expect(Self.check(draft, at: 0, after: draft + Self.talk, caret: at + Self.skip(Self.talk)) != .verified)
+        #expect(Self.check(draft, at: at, after: draft + Self.talk, caret: at + Self.skip(Self.talk) - 3) == .caretMismatch)
+        #expect(PasteAcknowledgement.evaluate(before: draft, selection: NSRange(location: at, length: 0), inserted: Self.talk,
+            after: draft + "\n" + Self.talk, caret: NSRange(location: at + Self.skip(Self.talk), length: 0),
+            richComposer: true, caretSkipsLineBreaks: false) != .verified)
+    }
+}

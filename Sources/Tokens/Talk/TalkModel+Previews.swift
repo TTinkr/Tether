@@ -17,7 +17,7 @@ extension TalkModel {
     // Bubble previews — scripted runs with no real talk (launch arguments)
 
     /// Local stage or native-panel preview: a fixed fake wave. With --temple-live-proof it also runs
-    /// a 40 s scripted π thinking panel session.
+    /// 40 s of scripted speech and thinking pauses for the bubble's π counter.
     func runInteractiveBubblePreview() {
         precondition((bubbleInteractivePreview || ProofRoutes.nativeBubblePreview) && isSyntheticRun)
         phase                  = .capturing
@@ -33,19 +33,13 @@ extension TalkModel {
         }
         // Speech at 0–2 s and 22–25 s, thinking pauses in between; ends at 40 s.
         if ProcessInfo.processInfo.arguments.contains("--temple-live-proof") {
-            temple.begin()
             let began = ProcessInfo.processInfo.systemUptime
-            let fixture = "We are designing a reading lamp for a small desk. It should have a warm light and a simple switch. We have not decided where to put the switch."
             let timer = Timer(timeInterval: 0.1, repeats: true) { [weak self] timer in
                 guard let self else { timer.invalidate(); return }
                 let elapsed                 = ProcessInfo.processInfo.systemUptime - began
                 let speaking                = elapsed < 2 || (elapsed >= 22 && elapsed < 25)
                 self.previewThinkingSeconds = speaking ? nil : max(0, elapsed - (elapsed < 22 ? 2 : 25))
-                self.temple.observe(pauseSeconds: self.previewThinkingSeconds, estimated: false,
-                                    rmsDB: speaking ? -25 : -60,
-                                    transcript: fixture + (elapsed >= 22 ? " Maybe on the base." : ""))
                 if elapsed >= 40 {
-                    self.temple.end()
                     timer.invalidate()
                     Diagnostics.event("temple_live_proof_completed synthetic_capture=true")
                 }

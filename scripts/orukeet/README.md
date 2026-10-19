@@ -1,7 +1,8 @@
 # Native Orukeet assets
 
 This optional package contains a retained offline recognizer, the unchanged Orukeet
-v0.1.0 Q8 model and the official macOS arm64 Metal SDK 0.1.1. No Python runtime,
+v0.1.0 Q8 model and a qualified local rebuild of the macOS arm64 Metal SDK
+0.1.1, labeled `0.1.1+tinkr-spm0.2.2-d685ef3`. No Python runtime,
 network client, microphone capture or model downloader is shipped. Python is used
 only by local build/package tooling. The normal package does not require these assets.
 
@@ -103,6 +104,11 @@ and the upstream ancestry/scope information. Orukeet integration code is MIT;
 SDK components retain their included Apache2/MIT and other third-party notices.
 This source adds a native process/protocol adapter and packaging, not changes to
 the model. The SDK's source commits and patches are recorded in `sdk-build.json`.
+
+The pinned local SDK rebuild uses SentencePiece 0.2.2 at
+`d685ef31d6eef1b9c22067bee67862ed0b2a5fb0`. Its source and binary hashes are
+recorded in `sdk-build.json`. Community distribution remains gated until the
+rebuilt SDK is independently qualified for this package.
 
 Primary provenance: <https://github.com/Oruk-AI/orukeet>, SDK tag `v0.1.1`, model
 revision `555136b50265a132d4cea0d35560c26fc4f657ab`. The original notices are copied

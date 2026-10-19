@@ -25,7 +25,7 @@ struct Build82ReviewFixesTests {
         let body = store[cancel.lowerBound...].prefix(1200)
         #expect(body.contains("Self.discardPartial(for: Self.installedURL(entry))"), "Cancel's step after the transfer stops")
         // A file already on this Mac is used, never fetched beside itself.
-        #expect(store.contains("if await Task.detached(operation: { Self.verifyInstalled(entry) }).value {\n                if current() {\n                    self?.states[id] = .ready\n                    self?.onReady?(id)\n                }"))
+        #expect(store.contains("if await Task.detached(operation: { Self.verifyInstalled(entry) }).value {\n                if current() {\n                    self?.states[id] = .ready\n                    self?.chooseFinished(id, selectWhenReady, choiceAtStart)\n                    self?.onReady?(id)\n                }"))
     }
 
     /// The Settings line beside the menu carries only loading or unavailable, for every status the app writes.

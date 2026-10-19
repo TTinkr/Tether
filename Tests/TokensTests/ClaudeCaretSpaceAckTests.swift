@@ -43,14 +43,38 @@ struct ClaudeCaretSpaceAckTests {
         // Caret not where the paste should leave it.
         #expect(check(inserted: words, after: draft + words, newCaret: caret - 1) == .caretMismatch)
         #expect(check(inserted: words, after: draft + words, newCaret: nil) == .unreadableCaret)
-        // Text with a line break is never accepted by this rule.
+        // Multi-line pastes are accepted since 2026-10-18 (lineBreakFreeClaudePaste), only exactly placed.
         #expect(check(inserted: " one\ntwo", after: draft + " one\ntwo",
-                      newCaret: caretAtEnd.location + 7) == .textMismatch)
+                      newCaret: caretAtEnd.location + 7) == .verified)
+        #expect(check(inserted: " one\ntwo", after: draft + " one\ntwo",
+                      newCaret: caretAtEnd.location + 8) == .caretMismatch)
         // A selection being replaced never reaches this rule (the ordinary exact check handles it).
         #expect(PasteAcknowledgement.lineBreakSkippingInsertion(before: draft, caretOffset: NSRange(location: 0, length: 3),
                                                                 inserted: "Mend", after: "Mend" + draft) == nil)
         // Plain (non-rich) fields never use it.
         #expect(check(inserted: words, after: draft + words, newCaret: caret, rich: false) == .textMismatch)
+    }
+
+    /// Codex QA of b2c1196: a lost, added or moved line break must fail; the shapes UX review's live
+    /// Claude pastes produced (empty box, draft plus paste, placeholder line break gone) still pass.
+    @Test func lineBreaksAreComparedExactlyOnlyThePlaceholderMayGo() {
+        func ack(_ before: String, caret: Int, _ inserted: String, _ after: String, newCaret: Int?) -> PasteAcknowledgement.Result {
+            PasteAcknowledgement.evaluate(before: before, selection: NSRange(location: caret, length: 0), inserted: inserted,
+                after: after, caret: newCaret.map { NSRange(location: $0, length: 0) }, richComposer: true,
+                caretSkipsLineBreaks: true)
+        }
+        let paste = "Hello there.\n[thinking 1.84s] more words\n— π [181 wpm, 8.63s, 40 characters]"
+        let pasteCount = paste.utf16.filter { $0 != 10 }.count
+        // Live shapes: empty composer (placeholder "\n"), and a draft whose placeholder goes.
+        #expect(ack("\n", caret: 0, paste, paste, newCaret: pasteCount) == .verified)
+        #expect(ack("Draft \n", caret: 6, paste, "Draft " + paste, newCaret: 6 + pasteCount) == .verified)
+        #expect(ack("Draft \n", caret: 6, paste, "Draft " + paste + "\n", newCaret: 6 + pasteCount) == .verified)
+        #expect(ack("\n", caret: 0, paste, paste, newCaret: pasteCount + 2) == .caretMismatch)
+        // Codex's three counterexamples are no longer verified.
+        #expect(ack("alpha\nbeta", caret: 9, "!", "alphabeta!", newCaret: 10) != .verified)
+        #expect(ack("\n", caret: 0, paste, paste.replacingOccurrences(of: "\n— π", with: " — π"),
+                    newCaret: pasteCount) != .verified)
+        #expect(ack("// note\nlet x = 1\n", caret: 16, " ok", "// note let x = 1 ok\n", newCaret: 19) != .verified)
     }
 
     @Test func aDraftWithoutLineBreaksBehavesExactlyAsBefore() {

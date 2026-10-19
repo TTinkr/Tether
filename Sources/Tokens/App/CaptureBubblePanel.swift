@@ -15,6 +15,8 @@ class CaptureBubblePanel: NSPanel {
     private var pendingRestore: DispatchWorkItem?
     private var observingTransitions = false
     private let workspaceNotifications = NSWorkspace.shared.notificationCenter
+    /// Retains the normal-launch standby owner. Preview/proof panels leave this nil.
+    var persistentLifecycle: PersistentBubbleLifecycle?
 
     func observeTransitions() {
         precondition(Thread.isMainThread)

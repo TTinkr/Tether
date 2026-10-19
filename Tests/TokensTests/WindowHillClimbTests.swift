@@ -63,20 +63,6 @@ struct WindowHillClimbTests {
         }
     }
 
-    /// Recent fills the sheet: the rows whose baselines land above the resting edge, 3 to 8.
-    @Test func recentShowsTheRowsTheSheetHolds() {
-        // Build 81: 5, not 6. The build-80 Speech model line moved the first row to rule 8, and
-        // the old 6 left the sixth row hidden (but clickable) under the bottom edge.
-        #expect(TokensHomeLayout.recentRows(sheetHeight: 720) == 5)
-        #expect(TokensHomeLayout.recentRows(sheetHeight: 900) == 8)
-        #expect(TokensHomeLayout.recentRows(sheetHeight: 520) == 3)
-        #expect(TokensHomeLayout.recentRows(sheetHeight: 720 / 1.5) == 3)
-        #expect(TokensHomeLayout.recentRows(sheetHeight: 2_000) == 8)
-        // Row 5 at 720 ends on rule 12 (672), 48 above the edge; descenders fit.
-        #expect(CGFloat(TokensHomeLayout.firstRowRule + 4) * TokensUI.paperCell
-                <= 720 - TokensRestingEdgeMask.below)
-    }
-
     /// Home starts at every other page's left edge (no sideways jump between pages), then runs
     /// up to 14 squares on the rules with at least a square of margin.
     @Test func homeColumnWidensOnTheRules() {

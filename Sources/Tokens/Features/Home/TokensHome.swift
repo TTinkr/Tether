@@ -68,6 +68,7 @@ struct TokensHome: View {
         }
     }
     @AppStorage(PasteMarkerPreference.key) var showPasteMarker = true
+    @AppStorage(PasteCursorRingPreference.key) var showCursorRing = true
     @State var historyQuery    = ""
     @State var dictionaryText  = ""
     @State var dictionarySaved = false

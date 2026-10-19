@@ -166,12 +166,12 @@ struct ScreenReferenceSamplerTests {
         let rendered = "# π T\n\n> *1.0s · 2 words · 120 wpm*\n\nhello there"
         let note = Self.cursorLine
         let with = TokensOutputOptions.parts(rendered, metadata: true, headerNotes: [note])
-        #expect(with.metadata.hasSuffix("\n" + note))
+        #expect(with.text == "hello there\n— π [120 wpm, 1.00s, 11 characters]")  // chill footer drops notes
         #expect(TokensOutputOptions.parts(rendered, metadata: false, headerNotes: [note]).metadata.isEmpty)
         let old = TokensDecoration.parts(rendered, decorated: false)
         let new = TokensOutputOptions.parts(rendered, metadata: true)
-        #expect(new.text == old.text && new.marker == old.marker && new.body == old.body
-            && new.metadata == old.metadata)
+        #expect(new.body == old.body + "\n— π [120 wpm, 1.00s, 11 characters]" && new.marker.isEmpty
+            && new.metadata.isEmpty)
         #expect(TokensOutputOptions.parts(rendered, metadata: false).text == rendered)
     }
 }

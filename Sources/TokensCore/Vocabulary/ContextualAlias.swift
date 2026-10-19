@@ -24,33 +24,25 @@ public struct ContextualAliasRule: Sendable, Equatable {
 
 public enum ContextualAlias {
     /*
-    Exactly three rules. Quinn -> Qwen stays in Vocabulary.swift. A blocked word anywhere in the
+    Exactly two rules. Quinn -> Qwen stays in Vocabulary.swift. A blocked word anywhere in the
     sentence window always wins over a nearby word.
     */
     public static let rules: [ContextualAliasRule] = [
         ContextualAliasRule(
             heard: #"cloud\s+code"#,
             written: "Claude Code",
-            requiresNearby: ["fable", "opus", "sonnet", "haiku", "codex", "agent", "chat", "session",
+            requiresNearby: ["opus", "sonnet", "haiku", "codex", "agent", "chat", "session",
                              "terminal", "skill", "harness", "worktree"],
             blockedBy: ["storage", "bucket", "aws", "azure", "gcp"]
         ),
         ContextualAliasRule(
             heard: #"codecs"#,
             written: "Codex",
-            requiresNearby: ["claude", "gpt", "agent", "chat", "thread", "cli", "exec", "luna", "sol",
-                             "terra", "astra", "worktree", "session"],
+            requiresNearby: ["claude", "gpt", "agent", "chat", "thread", "cli", "exec",
+                             "worktree", "session"],
             blockedBy: ["audio", "video", "ffmpeg", "mp3", "h264", "h265", "aac", "opus audio",
                         "encoder", "decoder", "codec", "compression", "lossless", "lossy",
                         "bitrate", "container", "format", "formats", "media", "streaming"]
-        ),
-        ContextualAliasRule(
-            heard: #"\bsoul\b"#,
-            written: "Sol",
-            // Model words only: chat, session and agent are in almost every prompt, so
-            // "put your soul into this session" must stay soul.
-            requiresNearby: ["gpt", "luna", "terra", "astra", "model", "codex"],
-            blockedBy: ["music", "brand", "heart", "food", "mate", "searching", "soulful"]
         ),
     ]
 

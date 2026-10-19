@@ -49,6 +49,11 @@ enum PasteAcknowledgement {
               selection.length <= source.length - selection.location else { return .invalidSelection }
         guard let after else { return .unreadableValue }
         if caretSkipsLineBreaks, richComposer,
+           let verdict = lineBreakFreeClaudePaste(before: before, caretOffset: selection, inserted: inserted,
+                                                  after: after ?? "", caret: caret), after != nil {
+            return verdict
+        }
+        if caretSkipsLineBreaks, richComposer,
            lineBreakSkippingInsertion(before: before, caretOffset: selection, inserted: inserted, after: after) != nil {
             guard let caret else { return .unreadableCaret }
             // Both offsets are in the editor's own caret space, so plain inserted text moves it by its length.
@@ -64,6 +69,55 @@ enum PasteAcknowledgement {
         guard caret.length == 0,
               caret.location == selection.location + (inserted as NSString).length else { return .caretMismatch }
         return .verified
+    }
+
+    /*
+    Claude desktop (UX review: every finished dictation should auto-send, onto a typed
+    draft too). Its caret counts characters but not line breaks. Its readback text is exact,
+    line breaks included (UX review's live logs, 2026-10-18: every verified paste read back as the
+    pasted text alone or the draft up to the caret plus the pasted text); only the measured
+    serialisations in claudeReadbackMatches may differ. So the text is compared exactly, line
+    breaks and all, apart from those; the caret is compared in
+    Claude's own line-break-free count. A lost, added or moved line break anywhere fails (Codex
+    QA of b2c1196: the first version set every line break aside). nil: not this shape.
+    */
+    static func lineBreakFreeClaudePaste(before: String, caretOffset: NSRange, inserted: String,
+                                         after: String, caret: NSRange?) -> Result? {
+        guard caretOffset.length == 0, !before.contains("\r"), !after.contains("\r"),
+              let split = utf16Index(before, skippingLineBreaksTo: caretOffset.location) else { return nil }
+        let units = Array(before.utf16)
+        let prefix = String(decoding: units[..<split], as: UTF16.self)
+        let suffix = String(decoding: units[split...], as: UTF16.self)
+        guard claudeReadbackMatches(prefix: prefix, inserted: inserted, suffix: suffix, after: after) else { return nil }
+        guard let caret else { return .unreadableCaret }
+        let expected = caretOffset.location + inserted.utf16.filter { $0 != 10 }.count
+        return caret.length == 0 && caret.location == expected ? .verified : .caretMismatch
+    }
+
+    /*
+    The serialisations measured in Claude (2026-10-18), and no others: the trailing placeholder line
+    break of an empty or draft composer may go, and a paste at the end of a line may start a new
+    paragraph (one or two line breaks where the draft and the paste meet). The draft before the
+    caret, the pasted text and the rest of the draft must otherwise read back character for character.
+    */
+    static func claudeReadbackMatches(prefix: String, inserted: String, suffix: String, after: String) -> Bool {
+        let tails = suffix.hasSuffix("\n") ? [suffix, String(suffix.dropLast())] : [suffix]
+        let atLineEnd = prefix.isEmpty || prefix.hasSuffix("\n") || suffix.isEmpty || suffix.hasPrefix("\n")
+        let joins = atLineEnd && !prefix.isEmpty && !prefix.hasSuffix("\n") ? ["", "\n", "\n\n"] : [""]
+        for join in joins { for tail in tails where after == prefix + join + inserted + tail { return true } }
+        return false
+    }
+
+    /// The UTF-16 index in `text` that sits after `count` characters other than line breaks (the
+    /// first such index, so a caret before a line break stays before it); nil when out of range.
+    static func utf16Index(_ text: String, skippingLineBreaksTo count: Int) -> Int? {
+        guard count >= 0 else { return nil }
+        var seen = 0
+        for (index, unit) in text.utf16.enumerated() {
+            if seen == count { return index }
+            if unit != 10 { seen += 1 }
+        }
+        return seen == count ? text.utf16.count : nil
     }
 
     /*

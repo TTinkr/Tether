@@ -80,7 +80,7 @@ enum TalkVocabulary {
     /*
     Step 1: apply every alias above. Step 2, only when the person turned on "Fix Agent Names"
     (AgentNameFixes, default off so the raw path stays faithful): the context-gated agent names
-    in ContextualAlias (Claude Code, Codex, Sol), which change only in an agent sentence and
+    in ContextualAlias (Claude Code, Codex), which change only in an agent sentence and
     never next to a blocked word such as "audio" or "music", or inside a link, path or code.
     Step 3: the "Quinn" rule below. Anything not matched is returned exactly as it came in.
     */
@@ -132,8 +132,8 @@ enum TalkVocabulary {
 
 
 /*
-Opt-in switch for the context-gated agent names (Claude Code, Codex, Sol). Off by default: a
-word like "codecs" or "soul" can be meant literally, so Tokens changes it only after the person
+Opt-in switch for the context-gated agent names (Claude Code, Codex). Off by default: a
+word like "codecs" can be meant literally, so Tokens changes it only after the person
 asks. The key is a saved-setting string on people's Macs.
 */
 enum AgentNameFixes {

@@ -132,7 +132,9 @@ extension TalkModel {
             return "Update downloaded · waiting for an idle moment"
         }
         // Optional, encouraged updates: quiet startup and roughly one-minute checks (no-op until a feed is configured).
-        if !isSyntheticRun, !Self.tokensFirstRunPending { updater.startBackgroundChecks() }
+        if !isSyntheticRun, !Self.tokensFirstRunPending {
+            updater.startBackgroundChecks()
+        }
         // A formatter result re-renders the live words.
         localFormatter.onUpdate = { [weak self] in self?.rerenderActiveTranscript() }
         if !isSyntheticRun && localFormatter.enabled { localFormatter.probe() }
@@ -182,10 +184,6 @@ extension TalkModel {
                 }
                 // Public capture keeps measured audio/bubble updates, without live model suggestions.
                 guard self.phase == .capturing, !publicTokens else { return }
-                self.temple.observe(pauseSeconds: self.audio.thinkingOpenPauseSeconds, estimated: self.audio.thinkingOpenPauseIsEstimated,
-                                    rmsDB: self.audio.features.rmsDBFS, transcript: self.audio.transcript)
-                // While a pause is held the reflection owns the 4b model; the live workspace waits.
-                guard !self.temple.stream.holdsReflectionModel else { return }
                 self.pauseAsides.observe(pauseSeconds: self.audio.thinkingOpenPauseSeconds, transcript: self.audio.transcript)
             }.store(in: &subscriptions)
         /*

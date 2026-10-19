@@ -59,6 +59,39 @@ microphone, shortcut or clipboard operations. These do not reproduce Mission Con
         #expect(p.showCount == 2 && !p.presentationRequested)
     }
 
+    @Test func persistentPolicyRestoresTheSamePanelAfterSuppressionWithoutTakingFocus() {
+        let p = panel(); defer { p.close() }
+        PersistentBubblePolicy.apply(.standby, to: p)
+        #expect(p.showCount == 1 && p.presentationRequested)
+        PersistentBubblePolicy.apply(.suppressed, to: p)
+        #expect(p.hideCount == 1 && !p.presentationRequested)
+        PersistentBubblePolicy.apply(.standby, to: p)
+        #expect(p.showCount == 2 && p.presentationRequested)
+        PersistentBubblePolicy.apply(.modelControlledRecovery, to: p)
+        #expect(p.showCount == 2 && p.hideCount == 1)
+        #expect(!p.canBecomeKey && !p.canBecomeMain)
+    }
+
+    @Test func visibleFailureReturnsAfterSleepWithoutTakingFocus() {
+        let p = panel(); defer { p.close() }
+        var restore = PersistentBubbleRecoveryRestoreState()
+
+        PersistentBubblePolicy.apply(.activeTalk, to: p)
+        let enteredSleep = restore.transition(suspended: true, failed: true,
+                                              panelPresentationRequested: p.presentationRequested)
+        #expect(!enteredSleep)
+        PersistentBubblePolicy.apply(.suppressed, to: p)
+        #expect(!p.presentationRequested && p.hideCount == 1)
+
+        let shouldRestore = restore.transition(suspended: false, failed: true,
+                                               panelPresentationRequested: p.presentationRequested)
+        PersistentBubblePolicy.apply(.modelControlledRecovery, to: p)
+        if shouldRestore { PersistentBubblePolicy.apply(.activeTalk, to: p) }
+
+        #expect(p.presentationRequested && p.showCount == 2)
+        #expect(!p.canBecomeKey && !p.canBecomeMain)
+    }
+
     @Test func recoveryKeepsHorizontalAndVerticalSizesAndNegativeDisplayCoordinates() {
         let screen = NSRect(x: -1512, y: 24, width: 1512, height: 920)
         for size in [NSSize(width: 272, height: 44), NSSize(width: 104, height: 148)] {

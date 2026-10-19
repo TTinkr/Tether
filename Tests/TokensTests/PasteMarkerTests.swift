@@ -64,6 +64,11 @@ struct PasteMarkerGeometryTests {
         let suite = "paste-marker-\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suite)!
         defer { defaults.removePersistentDomain(forName: suite) }
+        // Build 83: the pointer ring is its own switch; both start on and turn off separately.
+        #expect(PasteCursorRingPreference.load(defaults))
+        PasteCursorRingPreference.save(false, defaults)
+        #expect(!PasteCursorRingPreference.load(defaults) && PasteMarkerPreference.load(defaults))
+        PasteCursorRingPreference.save(true, defaults)
         #expect(PasteMarkerPreference.load(defaults))
         PasteMarkerPreference.save(false, defaults)
         #expect(!PasteMarkerPreference.load(defaults))

@@ -12,7 +12,11 @@
       },
       "sentencepiece": {
         "repository": "https://github.com/google/sentencepiece.git",
-        "commit": "17d7580d6407802f85855d2cc9190634e2c95624"
+        "commit": "d685ef31d6eef1b9c22067bee67862ed0b2a5fb0"
+      },
+      "abseil": {
+        "repository": "https://github.com/abseil/abseil-cpp.git",
+        "commit": "255c84dadd029fd8ad25c5efb5933e47beaa00c7"
       }
     },
     "patches": {
@@ -44,32 +48,46 @@
       "tree": "d0da2a190414cdcf4f7977e34fb22e38934b056f"
     },
     "sentencepiece": {
-      "commit": "17d7580d6407802f85855d2cc9190634e2c95624",
-      "tree": "6d2b48ff57265838b00264c0d99aeb159ac8aa95"
+      "commit": "d685ef31d6eef1b9c22067bee67862ed0b2a5fb0",
+      "tree": "cfbd20ba67bbc2b2d392d8063cb6bcda59299ec1"
+    },
+    "abseil": {
+      "commit": "255c84dadd029fd8ad25c5efb5933e47beaa00c7",
+      "tree": "be6814c559318c8a9c3905253815c0004799dbcf"
     }
   },
-  "build_script_sha256": "b9545b4f46c2fdbd290d5dd3ba15c45049c6770a4d2d23fed9c498ecabd6fa32",
-  "platform": "macOS-26.5-arm64-arm-64bit",
-  "cmake": "cmake version 4.3.1",
-  "compiler": "Apple clang version 21.0.0 (clang-2100.0.123.102)",
+  "build_script_sha256": "9c19b774e711cbfe05b6cc320f070362a83b0916290e3ddabefe1ce59d9b0d85",
+  "upstream_oruk_source": "1671ed9031660900e63c530792d7cfff8e822d0e",
+  "local_sdk_label": "0.1.1+tinkr-spm0.2.2-d685ef3",
+  "sentencepiece_version": "0.2.2",
+  "cmake_import_shim_sha256": "c57959196823043b02ef6e8afec8491403f23eada51138f09835740f36bad667",
+  "deployment_target": "13.0",
+  "architecture": "arm64",
+  "static_abseil": true,
+  "parser_tests_required": true,
+  "ninja": "1.11.1.git.kitware.jobserver-1",
+  "apple_sdk": "27.0",
+  "platform": "macOS-26.6.2-arm64-arm-64bit",
+  "cmake": "cmake version 3.31.6",
+  "compiler": "Apple clang version 21.0.0 (clang-2100.3.34.2)",
   "libraries": {
-    "libggml-base.0.12.0.dylib": "6bb66294aa8d9e77c308f178d1b334a3155eae9b0c4570f0342ca3a47faedd88",
-    "libggml-base.0.dylib": "6bb66294aa8d9e77c308f178d1b334a3155eae9b0c4570f0342ca3a47faedd88",
-    "libggml-base.dylib": "6bb66294aa8d9e77c308f178d1b334a3155eae9b0c4570f0342ca3a47faedd88",
-    "libggml-blas.0.12.0.dylib": "2afa2b19c56572b6378400a4223948e5a85627c5d16fb8ba12e2ef01c6f26087",
-    "libggml-blas.0.dylib": "2afa2b19c56572b6378400a4223948e5a85627c5d16fb8ba12e2ef01c6f26087",
-    "libggml-blas.dylib": "2afa2b19c56572b6378400a4223948e5a85627c5d16fb8ba12e2ef01c6f26087",
-    "libggml-cpu.0.12.0.dylib": "ddea8fa270f0103541efa4096d0e1534fc2e852a8f4fbb69721b135c40adea97",
-    "libggml-cpu.0.dylib": "ddea8fa270f0103541efa4096d0e1534fc2e852a8f4fbb69721b135c40adea97",
-    "libggml-cpu.dylib": "ddea8fa270f0103541efa4096d0e1534fc2e852a8f4fbb69721b135c40adea97",
-    "libggml-metal.0.12.0.dylib": "c8f844dc9d64800de3d618025016b7fe99176f77d734b69b084bd724ca0f9f25",
-    "libggml-metal.0.dylib": "c8f844dc9d64800de3d618025016b7fe99176f77d734b69b084bd724ca0f9f25",
-    "libggml-metal.dylib": "c8f844dc9d64800de3d618025016b7fe99176f77d734b69b084bd724ca0f9f25",
-    "libggml.0.12.0.dylib": "787c6dc0f0b79d77199915dd517cc7608ef8a18fa3550762f76485a671778f9b",
-    "libggml.0.dylib": "787c6dc0f0b79d77199915dd517cc7608ef8a18fa3550762f76485a671778f9b",
-    "libggml.dylib": "787c6dc0f0b79d77199915dd517cc7608ef8a18fa3550762f76485a671778f9b",
-    "libnemo_speech_asr.dylib": "6491103c1c7bbb2bef6976ebd8be9128c754bca5fe3472412a9119c59c317f33",
-    "libnemo_speech_asr_c.1.dylib": "4eac7e4412e50ca8e54e1684324837fec625bb3f1d0a3b8d21b259f33ad477ca",
-    "libnemo_speech_asr_c.dylib": "4eac7e4412e50ca8e54e1684324837fec625bb3f1d0a3b8d21b259f33ad477ca"
+    "libggml-base.0.12.0.dylib": "79888beb9870b417f5252e12dcfead2953e6cdd6273a55d913e6821ac4698747",
+    "libggml-base.0.dylib": "79888beb9870b417f5252e12dcfead2953e6cdd6273a55d913e6821ac4698747",
+    "libggml-base.dylib": "79888beb9870b417f5252e12dcfead2953e6cdd6273a55d913e6821ac4698747",
+    "libggml-blas.0.12.0.dylib": "65a7015f6d5339cf3f8fef3b61cbd012d3f64fcad463baf169ea5d55ade25a64",
+    "libggml-blas.0.dylib": "65a7015f6d5339cf3f8fef3b61cbd012d3f64fcad463baf169ea5d55ade25a64",
+    "libggml-blas.dylib": "65a7015f6d5339cf3f8fef3b61cbd012d3f64fcad463baf169ea5d55ade25a64",
+    "libggml-cpu.0.12.0.dylib": "9f1d76d1ba871005867c5451623846833120c81b17586cc338be31f0ef0d2aac",
+    "libggml-cpu.0.dylib": "9f1d76d1ba871005867c5451623846833120c81b17586cc338be31f0ef0d2aac",
+    "libggml-cpu.dylib": "9f1d76d1ba871005867c5451623846833120c81b17586cc338be31f0ef0d2aac",
+    "libggml-metal.0.12.0.dylib": "ce2d2a7668703de4543aff60783d2ecfebbee865a4007ab93f592734f1c4df7a",
+    "libggml-metal.0.dylib": "ce2d2a7668703de4543aff60783d2ecfebbee865a4007ab93f592734f1c4df7a",
+    "libggml-metal.dylib": "ce2d2a7668703de4543aff60783d2ecfebbee865a4007ab93f592734f1c4df7a",
+    "libggml.0.12.0.dylib": "bb4e3bae06cfa6906b2b1ea6467caa839df0f1337f4d012995c4052d6598ad3c",
+    "libggml.0.dylib": "bb4e3bae06cfa6906b2b1ea6467caa839df0f1337f4d012995c4052d6598ad3c",
+    "libggml.dylib": "bb4e3bae06cfa6906b2b1ea6467caa839df0f1337f4d012995c4052d6598ad3c",
+    "libnemo_speech_asr.dylib": "16a26a1f136cb3f934929a5ffbbad84ee66b81ef6c59527dd55af204ca63da9d",
+    "libnemo_speech_asr_c.1.dylib": "37e695299a7a8964887be3f229ea35aec67dee00b04a115b200c3294e17b6bb6",
+    "libnemo_speech_asr_c.dylib": "37e695299a7a8964887be3f229ea35aec67dee00b04a115b200c3294e17b6bb6"
   }
 }

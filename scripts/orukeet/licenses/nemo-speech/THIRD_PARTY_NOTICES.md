@@ -159,14 +159,19 @@ The command-line microphone capture layer compiles miniaudio directly into
 ### SentencePiece
 
 - Source: [`google/sentencepiece`](https://github.com/google/sentencepiece),
-  revision `17d7580d6407802f85855d2cc9190634e2c95624`
+  revision `d685ef31d6eef1b9c22067bee67862ed0b2a5fb0` (0.2.2)
 - Copyright 2018 Google Inc.
 - License: Apache License 2.0
 
 Default Windows ASR, macOS, and Linux release builds statically link the
-SentencePiece runtime and its bundled Abseil, protobuf-lite, and Darts-clone
-components. Their Apache 2.0 and BSD license texts are installed under
-`share/licenses/nemo-speech/third_party/sentencepiece/`.
+SentencePiece runtime with protobuf-lite and Darts-clone components. The local
+Orukeet SDK rebuild separately sources and statically links Abseil from
+[`abseil/abseil-cpp`](https://github.com/abseil/abseil-cpp), revision
+`255c84dadd029fd8ad25c5efb5933e47beaa00c7` (20260107.1), under Apache License 2.0.
+Their Apache 2.0 and BSD license texts are installed under
+`share/licenses/nemo-speech/third_party/sentencepiece/`, including the separately
+sourced Abseil text in `absl-LICENSE`. Abseil is not bundled by the selected
+SentencePiece source revision.
 
 ### whisper.cpp sample audio
 

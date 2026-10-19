@@ -48,34 +48,6 @@ import TokensCore
         #expect(TinkeringPrompts.calibrationInput(entries: [emptySpeech]).count == 0)
     }
 
-    @Test @MainActor func accumulatedQuestionsRetainNewestSixtyAndRespectRollback() {
-        let state   = ThinkingPanelState()
-        state.notes = " user text \n"
-        for generation in 1...70 {
-            state.receive(.init(text: "Question \(generation)?", state: .done,
-                                model: "fixture", generation: generation))
-        }
-        let lines = state.question.components(separatedBy: "\n").filter { !$0.isEmpty }
-        #expect(lines.count == 60)
-        #expect(lines.first == "Question 11?" && lines.last == "Question 70?")
-        #expect(state.batches.count == 60)
-        state.receive(.init(text: "Question 69?", state: .kept, model: "fixture", generation: 69))
-        #expect(!state.question.contains("Question 70?"))
-        #expect(state.question.hasSuffix("Question 69?"))
-        #expect(state.notes == " user text \n")
-        state.beginSession()
-        #expect(state.batches.isEmpty && state.notes == " user text \n")
-    }
 
-    @Test @MainActor func oneLargeQuestionBatchCannotBypassTheLineBound() {
-        let state = ThinkingPanelState()
-        let lines = (1...90).map { "Question \($0)?" }
-        state.receive(.init(text: lines.joined(separator: "\n"), state: .streaming,
-                            model: "fixture", generation: 1))
-        #expect(state.batches.count == 1)
-        #expect(state.question.components(separatedBy: "\n").count == 60)
-        #expect(state.question.hasPrefix("Question 31?\n"))
-        #expect(state.question.hasSuffix("Question 90?"))
-    }
 }
 

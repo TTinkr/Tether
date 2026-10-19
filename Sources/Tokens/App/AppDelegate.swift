@@ -451,6 +451,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                 showStyleChooser()
             }
             if publicTokens { installStatusItem() }
+            Task { @MainActor [weak self] in
+                self?.startPersistentBubbleLifecycle()
+            }
         }
     }
 

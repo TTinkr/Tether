@@ -50,9 +50,14 @@ extension AppDelegate {
             }
         } else if ProcessInfo.processInfo.arguments.contains("--render-preview-frames") {
             window.setFrame(NSRect(origin: .zero, size: panelDefaultSize), display: false)
+        } else if ProofRoutes.nativeBubblePreview {
+            if let visible = tokensTargetScreen(for: nil)?.visibleFrame {
+                BubbleWindowPlacement.apply(.right, to: window, visible: visible)
+            }
         } else if publicTokens {
             if let visible = tokensTargetScreen(for: nil)?.visibleFrame {
-                BubbleWindowPlacement.apply(BubblePlacement.loadPreset(), to: window, visible: visible)
+                let placement = BubblePlacement.loadPreset(defaultingTo: .right)
+                BubbleWindowPlacement.apply(placement, to: window, visible: visible)
             }
         } else {
             /*
@@ -72,6 +77,15 @@ extension AppDelegate {
         }
     }
 
+
+    /// Normal public launches keep one policy owner for standby visibility and destination preview.
+    /// Proof/preview branches never call this entry point.
+    @MainActor func startPersistentBubbleLifecycle() {
+        guard publicTokens, let panel = surfaceWindow, panel.persistentLifecycle == nil else { return }
+        let lifecycle = PersistentBubbleLifecycle(model: model, panel: panel)
+        panel.persistentLifecycle = lifecycle
+        lifecycle.start()
+    }
 
 }
 

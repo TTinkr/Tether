@@ -38,7 +38,9 @@ struct TalkBubbleSheet: View {
         that matches wins, so an earlier case hides every later one.
         */
         Group {
-            if model.tinkeringWorking {
+            if model.bubbleStandbyOverride {
+                BubbleStandbySurface(vertical: bubbleLayout.vertical, shortcutName: model.shortcutName)
+            } else if model.tinkeringWorking {
                 // Local tinkering is running: show its status line.
                 TinyStatusSurface(text: "Tinkering locally · up to 3 s")
             } else if model.heldWordsVisible {
@@ -75,8 +77,14 @@ struct TalkBubbleSheet: View {
                         .frame(width: 190, height: 36)
                     }
                 }
-            } else if model.previewIsHidden || model.phase != .capturing {
-                // Nothing to show: the preview is hidden, or no talk is capturing. The bubble is blank.
+            } else if model.phase == .finalizing {
+                // after the second press). Upright on a side edge there is only room for "…".
+                TinyStatusSurface(text: bubbleLayout.vertical ? "…" : "Finishing…")
+            } else if model.phase == .idle || model.phase == .delivered {
+                BubbleStandbySurface(vertical: bubbleLayout.vertical, shortcutName: model.shortcutName)
+            } else if model.phase == .failed {
+                TinyStatusSurface(text: "Ready to retry")
+            } else if model.previewIsHidden {
                 Color.clear
             } else if model.thinkingExperience {
                 /*
@@ -123,7 +131,9 @@ struct TalkBubbleSheet: View {
 
 
     private var needsReadableSurface: Bool {
-        !model.thinkingExperience || model.heldWordsVisible || model.tinkeringWorking || recoveryText != nil
+        if model.bubbleStandbyOverride { return false }
+        // Finishing stays compact (build 83); only words and messages that need reading grow it.
+        return !model.thinkingExperience || model.heldWordsVisible || model.tinkeringWorking || recoveryText != nil
     }
 
     private func updateReadableSize() {
@@ -175,5 +185,28 @@ struct TalkBubbleSheet: View {
     }
 
 
+}
+
+/// Compact graphite standby: visually distinct from the red live envelope and from text recovery.
+/// The hollow mark never implies that a microphone is open.
+struct BubbleStandbySurface: View {
+    let vertical: Bool
+    let shortcutName: String
+
+    var body: some View {
+        ZStack {
+            NativeBubbleMaterial().allowsHitTesting(false)
+            Circle()
+                .stroke(Color(red: 0.91, green: 0.93, blue: 0.90).opacity(0.65), lineWidth: 1.25)
+                .frame(width: vertical ? 6 : 7, height: vertical ? 6 : 7)
+                .allowsHitTesting(false)
+            BubblePresetArea()
+                .help("Ready · \(shortcutName) · click to move to the next screen edge")
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(appName) ready. Not recording.")
+        .accessibilityHint("Press \(shortcutName) to talk. Click to move to the next screen edge.")
+        .accessibilityIdentifier("tokens.bubble.standby")
+    }
 }
 

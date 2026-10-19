@@ -28,9 +28,8 @@ struct AliasCase: Sendable, CustomTestStringConvertible {
 @Suite struct ContextualAliasTests {
     /// Misheard agent prompts that must be fixed.
     static let fixes: [AliasCase] = [
-        .init(heard: "consult cloud code fable on the taste here", expected: "consult Claude Code fable on the taste here"),
+        .init(heard: "consult cloud code agent on the taste here", expected: "consult Claude Code agent on the taste here"),
         .init(heard: "send that to codecs in this session", expected: "send that to Codex in this session"),
-        .init(heard: "use soul for planning, luna for reads", expected: "use Sol for planning, luna for reads"),
         .init(heard: "open a cloud code session for the worktree", expected: "open a Claude Code session for the worktree"),
         .init(heard: "Cloud Code with opus should review it", expected: "Claude Code with opus should review it"),
         .init(heard: "ask the cloud code agent to run the tests", expected: "ask the Claude Code agent to run the tests"),
@@ -38,17 +37,12 @@ struct AliasCase: Sendable, CustomTestStringConvertible {
         .init(heard: "let the harness route it to cloud code", expected: "let the harness route it to Claude Code"),
         .init(heard: "codecs exec can take the bounded read", expected: "Codex exec can take the bounded read"),
         .init(heard: "steer the codecs thread with the new plan", expected: "steer the Codex thread with the new plan"),
-        .init(heard: "give it to Codecs on gpt luna", expected: "give it to Codex on gpt luna"),
+        .init(heard: "give it to Codecs on gpt", expected: "give it to Codex on gpt"),
         .init(heard: "the codecs cli should own packaging", expected: "the Codex cli should own packaging"),
         .init(heard: "spin up a codecs session in a new worktree", expected: "spin up a Codex session in a new worktree"),
-        .init(heard: "route planning to soul and checks to terra", expected: "route planning to Sol and checks to terra"),
-        .init(heard: "is Soul the right model for this", expected: "is Sol the right model for this"),
-        .init(heard: "start a new soul chat on gpt for the integration", expected: "start a new Sol chat on gpt for the integration"),
-        .init(heard: "gpt soul agent owns the release", expected: "gpt Sol agent owns the release"),
         .init(heard: "cloud code and codecs both read the worktree", expected: "Claude Code and Codex both read the worktree"),
-        .init(heard: "first line here.\nask cloud code fable now", expected: "first line here.\nask Claude Code fable now"),
-        .init(heard: "codecs chat, then soul with luna", expected: "Codex chat, then Sol with luna"),
-        .init(heard: "ok. soul model please", expected: "ok. Sol model please"),
+        .init(heard: "first line here.\nask cloud code agent now", expected: "first line here.\nask Claude Code agent now"),
+        .init(heard: "codecs chat, then soul music", expected: "Codex chat, then soul music"),
     ]
 
     /// Phrases that must come out byte-identical (hard zero tolerance).
@@ -105,7 +99,7 @@ struct AliasCase: Sendable, CustomTestStringConvertible {
     }
 
     @Test func emptyRulesChangeNothing() {
-        #expect(ContextualAlias.apply("consult cloud code fable", rules: []) == "consult cloud code fable")
+        #expect(ContextualAlias.apply("consult cloud code agent", rules: []) == "consult cloud code agent")
     }
 
     @Test func customRulesStillApply() {
@@ -118,7 +112,7 @@ struct AliasCase: Sendable, CustomTestStringConvertible {
     @Test func boundedWindowMatchesWholeStringSplit() {
         var generator = SplitMix(seed: 0x70_6B_E7)
         let pieces = ["soul", "codecs", "cloud code", "gpt", "music", "agent", ".", "!", "?", "\n",
-                      "\r\n", "é", "e\u{301}", "👨‍👩‍👧", "🇺🇸", "luna", "word", "  ", ", "]
+                      "\r\n", "é", "e\u{301}", "👨‍👩‍👧", "🇺🇸", "model", "word", "  ", ", "]
         for _ in 0 ..< 2_000 {
             let count = Int(generator.next() % 120)
             var text = ""
@@ -170,7 +164,7 @@ struct AliasCase: Sendable, CustomTestStringConvertible {
     @Test func sentenceBoundedPrefixAgreesWithFinal() {
         let finals = [
             "send that to codecs. then soul for luna reads",
-            "ask cloud code fable now. the codecs thread can wait",
+            "ask cloud code agent now. the codecs thread can wait",
             "soul music first. then codecs in this session",
         ]
         for final in finals {
@@ -189,8 +183,8 @@ struct AliasCase: Sendable, CustomTestStringConvertible {
         return String(left.suffix(96)) + " " + String(right.prefix(96))
     }
 
-    @Test func exactlyThreeRulesShip() {
-        #expect(ContextualAlias.rules.map(\.written) == ["Claude Code", "Codex", "Sol"])
+    @Test func exactlyTwoRulesShip() {
+        #expect(ContextualAlias.rules.map(\.written) == ["Claude Code", "Codex"])
     }
 }
 

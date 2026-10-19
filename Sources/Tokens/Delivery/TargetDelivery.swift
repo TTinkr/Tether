@@ -51,7 +51,7 @@ enum TargetDelivery {
                         subrole: stringAttribute(kAXSubroleAttribute as String, from: element),
                         hasSelection: selectedRange(in: element) != nil)
                 },
-                enable: { enableManualAccessibility(appElement) },
+                enable: { enableManualAccessibility(appElement, bundleIdentifier: application.bundleIdentifier) },
                 frontmost: {
                     !application.isTerminated && NSWorkspace.shared.frontmostApplication?.processIdentifier == pid
                 },
@@ -61,7 +61,7 @@ enum TargetDelivery {
                 screenFrame: { screenFrame(for: $0) },
                 selection: { selectedRange(in: $0) },
                 windowCount: { windowCount(in: appElement) },
-                wait: { usleep(25_000) })
+                wait: { usleep(50_000) })
             guard let reading = readCapture(budget: budget, bundle: application.bundleIdentifier ?? "unknown", reads) else {
                 return nil
             }
@@ -161,9 +161,28 @@ enum TargetDelivery {
                               selection: selection, editor: editor, windowCount: windowCount)
     }
 
-    /// Asks an Electron/Chromium app to build its accessibility tree. True when the app accepted the ask.
-    static func enableManualAccessibility(_ app: AXUIElement) -> Bool {
-        ask(app, { AXUIElementSetAttributeValue(app, "AXManualAccessibility" as CFString, kCFBooleanTrue) }) == .success
+    /*
+    Asks an Electron/Chromium app to build its accessibility tree. True when the app accepted the
+    ask. Chromium browsers also get AXEnhancedUserInterface, the switch screen readers use: on a
+    Sonoma Mac Chrome answered the manual ask but never built Google's search box (build 83), so
+    the box was never found and nothing pasted. Browsers only: in other apps that switch can
+    slow window animations, and Electron apps answer the manual ask.
+    */
+    static func enableManualAccessibility(_ app: AXUIElement, bundleIdentifier: String? = nil) -> Bool {
+        let manual = ask(app, { AXUIElementSetAttributeValue(app, "AXManualAccessibility" as CFString, kCFBooleanTrue) }) == .success
+        guard isChromiumBrowser(bundleIdentifier) else { return manual }
+        let enhanced = ask(app, { AXUIElementSetAttributeValue(app, "AXEnhancedUserInterface" as CFString, kCFBooleanTrue) }) == .success
+        // Which switch the browser took, so a field that still never appears says where it stopped.
+        Diagnostics.event("browser_accessibility_ask bundle=\(bundleIdentifier ?? "-") manual=\(manual) enhanced=\(enhanced)")
+        return manual || enhanced
+    }
+
+    /// Chrome (every channel), Edge, Brave, Arc, Vivaldi, Opera and Chromium.
+    static func isChromiumBrowser(_ bundleIdentifier: String?) -> Bool {
+        guard let id = bundleIdentifier else { return false }
+        return id.hasPrefix("com.google.Chrome") || id.hasPrefix("com.microsoft.edgemac") || id.hasPrefix("com.brave.Browser")
+            || id == "company.thebrowser.Browser" || id == "com.vivaldi.Vivaldi" || id.hasPrefix("com.operasoftware.Opera")
+            || id == "org.chromium.Chromium"
     }
 
     /*

@@ -48,7 +48,8 @@ struct BubbleControlSurface<Readout: View>: View {
         The tracker never takes clicks (hitTest returns nil), so the presets and buttons behave as before.
         */
         .opacity(ghost && !(hovering || showsControls) ? 0.42 : 1)
-        .animation(reduceMotion ? nil : .easeInOut(duration: 0.3), value: ghost)
+        // Quick and front-loaded, so the pause counter shows as soon as talking stops (2026-10-18).
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: ghost)
         .background(BubbleHoverTracker { inside in
             if reduceMotion { hovering = inside } else { withAnimation(.easeOut(duration: 0.12)) { hovering = inside } }
         })

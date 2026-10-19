@@ -105,7 +105,8 @@ extension TargetDelivery {
                     var actual: pid_t   = 0
                     return AXUIElementGetPid(app, &expected) == .success
                         && AXUIElementGetPid(element, &actual) == .success && expected == actual
-                })
+                },
+                inner: { caretTextBox(inside: $0) })
         }
     }
 
@@ -121,17 +122,79 @@ extension TargetDelivery {
         focusedWindow: () -> Element?,
         windowFocus: (Element) -> Element?,
         systemFocus: () -> Element?,
-        sameApplication: (Element) -> Bool
+        sameApplication: (Element) -> Bool,
+        inner: (Element) -> Element? = { _ in nil }
     ) -> (element: Element?, unresponsive: Bool) {
-        if let element = appFocus() { return (element, budget.stopped) }
+        /*
+        A page or group reported as focused gives way to the text box that holds its caret
+        (build 84: on a Sonoma Mac, Chrome reported YouTube's page, not its focused search box,
+        until a click; the paste was refused and the words held). The same answer serves the
+        capture and every later "same field?" check, so they always agree.
+        */
+        func settled(_ element: Element) -> (element: Element?, unresponsive: Bool) {
+            guard !budget.stopped else { return (element, true) }
+            return (inner(element) ?? element, budget.stopped)
+        }
+        if let element = appFocus() { return settled(element) }
         guard !budget.stopped else { return (nil, true) }
         if let window = focusedWindow() {
             guard !budget.stopped else { return (nil, true) }
-            if let element = windowFocus(window) { return (element, budget.stopped) }
+            if let element = windowFocus(window) { return settled(element) }
         }
         guard !budget.stopped else { return (nil, true) }
         guard let element = systemFocus(), sameApplication(element) else { return (nil, budget.stopped) }
-        return (element, budget.stopped)
+        return settled(element)
+    }
+
+    /*
+    The text box holding the caret inside a focused web page or group, or nil when the element
+    is not such a container or none is found. First the browser's own answer (the element at the
+    start of AXSelectedTextMarkerRange, walked up to its text box: exact, a few reads); then a
+    bounded breadth-first search for a focused text box. Only roles and focus flags are read.
+    */
+    static func caretTextBox(inside container: AXUIElement) -> AXUIElement? {
+        guard DestinationFocus.containerRoles.contains(stringAttribute(kAXRoleAttribute as String, from: container) ?? "") else {
+            return nil
+        }
+        /*
+        One paste asks "same field?" several times. A box found in the last second is reused only
+        while it still reports focus itself (Codex review of 85: a memo keyed by the page alone
+        could answer A after focus moved to B). "None found" is never remembered, so a box that
+        appears later is seen at once.
+        */
+        let now = ProcessInfo.processInfo.systemUptime
+        if let memo = caretMemo, CFEqual(memo.container, container), now - memo.at < 1.0,
+           DeliveryFocusNode(memo.box).focused { return memo.box }
+        let box = textBoxAtSelectionMarker(in: container)
+            ?? DestinationFocus.resolve(DeliveryFocusNode(container), limit: DeliveryFocusNode.searchLimit)?.element
+        caretMemo = nil
+        if let box, AXWaitBudget.current?.stopped != true { caretMemo = (container, box, now) }
+        return box
+    }
+
+    nonisolated(unsafe) private static var caretMemo: (container: AXUIElement, box: AXUIElement, at: TimeInterval)?
+
+    private static func textBoxAtSelectionMarker(in container: AXUIElement) -> AXUIElement? {
+        var range: CFTypeRef?
+        guard ask(container, { AXUIElementCopyAttributeValue(container, "AXSelectedTextMarkerRange" as CFString, &range) }) == .success,
+              let range else { return nil }
+        var start: CFTypeRef?
+        guard ask(container, { AXUIElementCopyParameterizedAttributeValue(container,
+                  "AXStartTextMarkerForTextMarkerRange" as CFString, range, &start) }) == .success,
+              let start else { return nil }
+        var found: CFTypeRef?
+        guard ask(container, { AXUIElementCopyParameterizedAttributeValue(container,
+                  "AXUIElementForTextMarker" as CFString, start, &found) }) == .success,
+              var node = boundedElement(found) else { return nil }
+        // Up from the caret's text run to the box that owns it (a few levels at most).
+        for _ in 0..<12 {
+            let role = stringAttribute(kAXRoleAttribute as String, from: node)
+            if DestinationFocus.textRoles.contains(role ?? "") { return node }
+            if CFEqual(node, container) { return nil }
+            guard let parent = copyElement(kAXParentAttribute as String, from: node) else { return nil }
+            node = parent
+        }
+        return nil
     }
 
     static func windowCount(in app: AXUIElement) -> Int? {
@@ -437,5 +500,32 @@ enum PasteRoute {
     /// Whether a Command-V may be posted: the HID route only to the app in front.
     static func mayPost(viaHID: Bool, frontPID: pid_t?, targetPID: pid_t) -> Bool {
         !viaHID || frontPID == targetPID
+    }
+}
+
+
+/// A live AX node for the delivery-side focus search; every read goes through the current
+/// AXWaitBudget (TargetDelivery.ask), so a slow page ends the search instead of the talk.
+final class DeliveryFocusNode: DestinationFocusNode {
+    /// Wider than the marker's 160: a big page (YouTube) keeps its search box past that.
+    static let searchLimit = 400
+    let element: AXUIElement
+    init(_ element: AXUIElement) { self.element = element }
+
+    var role: String? { TargetDelivery.stringAttribute(kAXRoleAttribute as String, from: element) }
+    var editable: Bool { flag("AXEditable") }
+    var focused: Bool { flag(kAXFocusedAttribute as String) }
+    var children: [DeliveryFocusNode] {
+        guard AXWaitBudget.current?.stopped != true else { return [] }
+        var raw: CFTypeRef?
+        guard TargetDelivery.ask(element, { AXUIElementCopyAttributeValue(element, kAXChildrenAttribute as CFString, &raw) }) == .success,
+              let list = raw as? [AXUIElement] else { return [] }
+        return list.map(DeliveryFocusNode.init)
+    }
+
+    private func flag(_ name: String) -> Bool {
+        var raw: CFTypeRef?
+        guard TargetDelivery.ask(element, { AXUIElementCopyAttributeValue(element, name as CFString, &raw) }) == .success else { return false }
+        return (raw as? NSNumber)?.boolValue ?? false
     }
 }

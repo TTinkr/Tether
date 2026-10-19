@@ -178,6 +178,25 @@ struct DeliveryHardeningTests {
         #expect(foreign.element == nil && !foreign.unresponsive)
     }
 
+    /// Build 84: a page reported as focused gives way to the text box holding its caret, for the
+    /// capture and every later "same field?" check alike; other elements are kept as they are.
+    @Test func aFocusedPageResolvesToTheTextBoxInsideIt() {
+        let app = FakeApp()
+        let read = TargetDelivery.focusedElementLookup(budget: app.budget,
+            appFocus: { app.request("app", costs: 0.01, AXError.success, 1) },
+            focusedWindow: { nil }, windowFocus: { _ in nil }, systemFocus: { nil },
+            sameApplication: { _ in true },
+            inner: { $0 == 1 ? 42 : nil })
+        #expect(read.element == 42 && !read.unresponsive)
+        let plain = FakeApp()
+        let kept = TargetDelivery.focusedElementLookup(budget: plain.budget,
+            appFocus: { plain.request("app", costs: 0.01, AXError.success, 7) },
+            focusedWindow: { nil }, windowFocus: { _ in nil }, systemFocus: { nil },
+            sameApplication: { _ in true },
+            inner: { _ in nil })
+        #expect(kept.element == 7)
+    }
+
     @Test func aStuckSystemWideTryWaitsOnlyItsShortWait() {
         let app = FakeApp()
         let read = lookup(app, appFocus: (0.01, .noValue), window: (0.01, .noValue), system: 5.0)
@@ -270,6 +289,7 @@ struct DeliveryHardeningTests {
             #expect(TargetDelivery.screenFrame(for: element) == nil)
             #expect(!TargetDelivery.isRichComposer(element, role: "AXTextArea"))
             #expect(!TargetDelivery.enableManualAccessibility(element))
+            #expect(!TargetDelivery.enableManualAccessibility(element, bundleIdentifier: "com.google.Chrome"))
             let read = TargetDelivery.focusedElementRead(in: element)
             #expect(read.element == nil && read.unresponsive)
             // An unanswered secure-field question is never taken as an ordinary field.

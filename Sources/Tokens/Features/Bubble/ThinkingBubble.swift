@@ -52,7 +52,7 @@ struct TokensThinkingBubble: View {
             }
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(bubbleInteractivePreview ? "Tokens interactive preview. Synthetic audio. Click the middle to cycle screen edges." : "\(appName) live talk. Click the middle to cycle screen edges.")
+        .accessibilityLabel(bubbleInteractivePreview ? "Tokens interactive preview. Synthetic audio. Click the middle to cycle screen edges." : "\(appName) listening. Click the middle to cycle screen edges.")
     }
 
     /*
@@ -64,7 +64,7 @@ struct TokensThinkingBubble: View {
     static func isGhost(audioConfirmed: Bool, pause: LiveThinkingPause?) -> Bool {
         guard audioConfirmed else { return true }
         guard let pause else { return false }
-        return pause.seconds >= ThinkingPauseTracker.minimumAnnotatedPause
+        return pause.seconds >= BubblePauseCounter.showsAfter
     }
 
 }
@@ -115,6 +115,10 @@ struct TokensBubbleReadout: View {
             TinyEnvelope(samples: [], vertical: vertical)
                 .padding(talkingInsets)
                 .accessibilityLabel("Microphone starting")
+        } else if let pause, pause.seconds >= BubblePauseCounter.showsAfter {
+            BubblePauseCounter(seconds: pause.seconds, vertical: vertical)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("\(pause.estimated ? "Estimated speech gap" : "Measured microphone silence") \(String(format: "%.4f", pause.seconds)) seconds")
         } else if let pause {
             TinyEnvelope(samples: waveform, vertical: vertical)
                 .padding(talkingInsets)
@@ -141,3 +145,31 @@ struct TokensBubbleReadout: View {
 
 }
 
+
+/// The pause readout: the logo π and the pause so far in hundredths, in the envelope's coral ink.
+/// It sits in the ghost-dimmed pill, so it stays quiet; vertical pills stack the π above the digits.
+struct BubblePauseCounter: View {
+    /// The counter and the ghost dim start half a second into a pause (UX review:
+    /// "start at zero point five seconds"), sooner than the 1 s pause notes in the text.
+    static let showsAfter = 0.5
+    let seconds: Double
+    let vertical: Bool
+
+    var body: some View {
+        let digits = Text(String(format: "%.2f", seconds))
+            .font(.system(size: vertical ? 8.5 : 10, weight: .medium, design: .rounded).monospacedDigit())
+            .foregroundStyle(TinyEnvelope.ink)
+            .lineLimit(1)
+            .minimumScaleFactor(0.6)
+        let piSize = LogoPi.size(inkHeight: vertical ? 8 : 9, lineWidth: 1.3)
+        let pi = LogoPi()
+            .stroke(TinyEnvelope.ink, style: StrokeStyle(lineWidth: 1.3, lineCap: .round, lineJoin: .round))
+            .frame(width: piSize.width, height: piSize.height)
+            .padding(0.65)
+        if vertical {
+            VStack(spacing: 3) { pi; digits }.padding(.horizontal, 2)
+        } else {
+            HStack(spacing: 4) { pi; digits }
+        }
+    }
+}

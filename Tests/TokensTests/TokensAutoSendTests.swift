@@ -28,7 +28,8 @@ struct TokensAutoSendTests {
 
     @Test func unconfirmedFailedAndPartialDeliveryNeverInvokeSendEvenWhenRequested() {
         var attempts = 0
-        for outcome in [DeliveryOutcome.delivered, .notObserved, .failed("no_target"), .failed("partial_insert")] {
+        for outcome in [DeliveryOutcome.delivered, .notObserved, .failed("no_target"), .failed("partial_insert"),
+                        .failed("partial_browser_continuation_refused")] {
             for requested in [false, true] {
                 for reserved in [false, true] {
                     #expect(!TokensAutoSendDelivery.submitIfVerified(outcome, requested: requested,

@@ -112,16 +112,5 @@ import Testing
         #expect(!authored.text.contains("AI summary"))
     }
 
-    @Test @MainActor func savedPanelOptInAndTurnOnCannotEnableLaunchTyping() {
-        let temple = TokensThinkingTemple(arguments: ["--render-preview-frames"])
-        #expect(!temple.panelEnabled)
-        temple.turnOn()
-        temple.begin()
-        temple.observe(pauseSeconds: 2, estimated: false, rmsDB: -70, transcript: "hello world")
-        #expect(!temple.panelEnabled)
-        #expect(temple.panelState == nil)
-        #expect(temple.notesForDelivery.isEmpty)
-        #expect(temple.consumeNotesForDelivery().isEmpty)
-    }
 }
 
