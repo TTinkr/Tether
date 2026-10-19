@@ -1,4 +1,4 @@
-# Tether
+# Tether — the engine behind [Tokens](https://tinkring.com)
 
 **A local tether to cloud intelligence.**
 
