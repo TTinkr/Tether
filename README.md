@@ -6,7 +6,7 @@ The source code for **Tokens**: open-source dictation for Mac. Talk, and Tokens 
 
 ![Talk → Tokens → Harness](docs/images/voice-flow.svg)
 
-Press **Right Option** to talk, press it again to paste. Parakeet v3 is the default speech model; Apple speech is an option. No account, no analytics.
+Press **Right Option** to talk, press it again to paste. Parakeet v3 is the default speech model; Apple speech is an option.
 
 ## Get started
 
