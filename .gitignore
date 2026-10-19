@@ -1,0 +1,23 @@
+.build/
+dist/
+.agent/
+*.xcuserstate
+.DS_Store
+
+# Local build state and credentials are never product source.
+.swiftpm/
+DerivedData/
+dist.noindex/
+.env
+.env.*
+*.p12
+*.p8
+*.key
+*.mobileprovision
+*.provisionprofile
+xcuserdata/
+__pycache__/
+*.pyc
+
+.venv-bench/
+scripts/speech_bench/results/

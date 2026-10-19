@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="150" viewBox="0 0 720 150" role="img" aria-labelledby="title desc">
+  <title id="title">Talk, Tokens, harness</title>
+  <desc id="desc">Tokens transcribes speech locally on your Mac, then pastes the text into your harness.</desc>
+  <style>
+    .box, .arrow { fill: none; stroke: #8c959f; stroke-width: 1.5; }
+    .label { fill: #1f2328; }
+    @media (prefers-color-scheme: dark) {
+      .box, .arrow { stroke: #59636e; }
+      .label { fill: #f0f3f6; }
+    }
+  </style>
+  <rect class="box" x="26" y="34" width="174" height="82" rx="6"/>
+  <rect class="box" x="273" y="34" width="174" height="82" rx="6"/>
+  <rect class="box" x="520" y="34" width="174" height="82" rx="6"/>
+  <path class="arrow" d="M216 75h40m-7-7 7 7-7 7M463 75h40m-7-7 7 7-7 7"/>
+  <g class="label" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif" text-anchor="middle" font-size="24">
+    <text x="113" y="84">Talk</text>
+    <text x="360" y="84">Tokens</text>
+    <text x="607" y="84">Harness</text>
+  </g>
+</svg>

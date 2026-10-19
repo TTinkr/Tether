@@ -1,0 +1,1078 @@
+{
+  "schema": "tinkr-speech-bench-summary/1",
+  "run_id": "20261017T010320Z",
+  "dry_run": false,
+  "clips": {
+    "per_set": {
+      "test-clean": 100,
+      "test-other": 100
+    },
+    "total": 200,
+    "audio_seconds": 2059.63
+  },
+  "method": {
+    "cold_loads": 3,
+    "timed_repeats_per_clip": 3,
+    "warmup_per_clip": 1,
+    "timing": "end of writing the ORK1 frame to the result line's newline, time.perf_counter()",
+    "wer": "corpus WER = (S+D+I)/N after Whisper EnglishTextNormalizer, from timed request 1",
+    "p90": "linear interpolation between closest ranks",
+    "talk_10s": "median of timed requests on clips with 8.0 <= duration <= 12.0 s",
+    "cold_load": "new process, spawn to ready line; OS file cache and Metal shader cache not purged",
+    "cold_first_result": "new process, spawn to result line of one probe-clip request (extension to the plan)"
+  },
+  "models": [
+    {
+      "id": "orukeet",
+      "name": "Orukeet",
+      "model_file": "orukeet-v0.1.0-q8.gguf",
+      "model_sha256_pinned": "93ce19c6d8244acbfea980eeaf970531d4f216171578ef8e041dcc2d070a45bd",
+      "status": "ok",
+      "before": {
+        "utc": "2026-10-17T01:03:20Z",
+        "load": "18:03  up  7:34, 1 user, load averages: 4.58 4.48 3.88",
+        "therm": [
+          "Note: No thermal warning level has been recorded",
+          "Note: No performance warning level has been recorded",
+          "Note: No CPU power status has been recorded"
+        ]
+      },
+      "model_sha256_verified": "93ce19c6d8244acbfea980eeaf970531d4f216171578ef8e041dcc2d070a45bd",
+      "ready_line": {
+        "type": "ready",
+        "protocol": "ORK1",
+        "mode": "offline_retained",
+        "sample_format": "mono_f32le",
+        "max_seconds": 30,
+        "backend_requested": "metal",
+        "backend_verified": false,
+        "sdk_version": "nemo-speech-asr 0.1.0",
+        "load_ms": 49.183584
+      },
+      "wer": {
+        "test-clean": {
+          "wer_percent": 1.082,
+          "errors": 29,
+          "ref_words": 2680,
+          "sub": 21,
+          "del": 4,
+          "ins": 4,
+          "clips": 100
+        },
+        "test-other": {
+          "wer_percent": 2.803,
+          "errors": 80,
+          "ref_words": 2854,
+          "sub": 67,
+          "del": 4,
+          "ins": 9,
+          "clips": 100
+        },
+        "combined": {
+          "wer_percent": 1.97,
+          "errors": 109,
+          "ref_words": 5534,
+          "sub": 88,
+          "del": 8,
+          "ins": 13,
+          "clips": 200
+        }
+      },
+      "latency_s": {
+        "n_timed": 600,
+        "median": 0.05566712499999582,
+        "p90": 0.10297467110000016,
+        "min": 0.02470445900000051,
+        "max": 0.15927400000000347
+      },
+      "talk_10s_latency_s": {
+        "label": "10-second talk (clips 8-12 s)",
+        "n_timed": 150,
+        "n_clips": 50,
+        "median": 0.05648981250000018,
+        "p90": 0.07309485379999989
+      },
+      "speed_x_realtime": 162.81,
+      "cold_load_s": {
+        "runs": [
+          0.08132125000000001,
+          0.058648916000000106,
+          0.04704091599999982
+        ],
+        "median": 0.058648916000000106,
+        "min": 0.04704091599999982,
+        "max": 0.08132125000000001
+      },
+      "cold_first_result_s": {
+        "runs": [
+          0.30052087500000013,
+          0.2693255830000001,
+          0.2366945410000001
+        ],
+        "median": 0.2693255830000001,
+        "probe_clip": "121-127105-0031",
+        "probe_duration_s": 10.765,
+        "definition": "new process: spawn to the result line of one request (the probe clip)"
+      },
+      "peak_rss_bytes": {
+        "warm_process": 884228096,
+        "cold_processes_max": 847364096,
+        "method": "wait4() ru_maxrss of the worker process (bytes on macOS)"
+      },
+      "first_request_after_ready": {
+        "clip": "1188-133604-0038",
+        "duration_s": 5.365,
+        "seconds": 0.17904158300000006,
+        "note": "first request after ready (untimed warm-up of clip 1); not in latency stats"
+      },
+      "outputs_differing_across_4_requests": 0,
+      "n_clips": 200,
+      "after": {
+        "utc": "2026-10-17T01:04:14Z",
+        "load": "18:04  up  7:35, 1 user, load averages: 3.43 4.17 3.79",
+        "therm": [
+          "Note: No thermal warning level has been recorded",
+          "Note: No performance warning level has been recorded",
+          "Note: No CPU power status has been recorded"
+        ]
+      },
+      "model_wall_s": 53.5
+    },
+    {
+      "id": "parakeet-tdt-0.6b-v2",
+      "name": "Parakeet v2",
+      "model_file": "parakeet-tdt-0.6b-v2-Q8_0.gguf",
+      "model_sha256_pinned": "f0d0e99cebb6d3b83f1f7069b82b5d3c2e39a54545b0da039cb4bafd9c4e5caa",
+      "status": "ok",
+      "before": {
+        "utc": "2026-10-17T01:04:14Z",
+        "load": "18:04  up  7:35, 1 user, load averages: 3.43 4.17 3.79",
+        "therm": [
+          "Note: No thermal warning level has been recorded",
+          "Note: No performance warning level has been recorded",
+          "Note: No CPU power status has been recorded"
+        ]
+      },
+      "model_sha256_verified": "f0d0e99cebb6d3b83f1f7069b82b5d3c2e39a54545b0da039cb4bafd9c4e5caa",
+      "ready_line": {
+        "type": "ready",
+        "protocol": "ORK1",
+        "mode": "offline_retained",
+        "sample_format": "mono_f32le",
+        "max_seconds": 30,
+        "backend_requested": "metal",
+        "backend_verified": false,
+        "sdk_version": "transcribe.cpp 0.4.0",
+        "load_ms": 213.078834
+      },
+      "wer": {
+        "test-clean": {
+          "wer_percent": 0.896,
+          "errors": 24,
+          "ref_words": 2680,
+          "sub": 19,
+          "del": 2,
+          "ins": 3,
+          "clips": 100
+        },
+        "test-other": {
+          "wer_percent": 2.698,
+          "errors": 77,
+          "ref_words": 2854,
+          "sub": 60,
+          "del": 8,
+          "ins": 9,
+          "clips": 100
+        },
+        "combined": {
+          "wer_percent": 1.825,
+          "errors": 101,
+          "ref_words": 5534,
+          "sub": 79,
+          "del": 10,
+          "ins": 12,
+          "clips": 200
+        }
+      },
+      "latency_s": {
+        "n_timed": 600,
+        "median": 0.08084572949999824,
+        "p90": 0.15259579650000105,
+        "min": 0.033696250000005534,
+        "max": 0.2352395420000022
+      },
+      "talk_10s_latency_s": {
+        "label": "10-second talk (clips 8-12 s)",
+        "n_timed": 150,
+        "n_clips": 50,
+        "median": 0.08281306250000142,
+        "p90": 0.10026952050000161
+      },
+      "speed_x_realtime": 113.84,
+      "cold_load_s": {
+        "runs": [
+          0.23185141700000145,
+          0.22157212500000156,
+          0.22106116599999837
+        ],
+        "median": 0.22157212500000156,
+        "min": 0.22106116599999837,
+        "max": 0.23185141700000145
+      },
+      "cold_first_result_s": {
+        "runs": [
+          0.3239972499999979,
+          0.31315633399999854,
+          0.3131360830000034
+        ],
+        "median": 0.31315633399999854,
+        "probe_clip": "121-127105-0031",
+        "probe_duration_s": 10.765,
+        "definition": "new process: spawn to the result line of one request (the probe clip)"
+      },
+      "peak_rss_bytes": {
+        "warm_process": 942014464,
+        "cold_processes_max": 911409152,
+        "method": "wait4() ru_maxrss of the worker process (bytes on macOS)"
+      },
+      "first_request_after_ready": {
+        "clip": "1188-133604-0038",
+        "duration_s": 5.365,
+        "seconds": 0.0572450409999945,
+        "note": "first request after ready (untimed warm-up of clip 1); not in latency stats"
+      },
+      "outputs_differing_across_4_requests": 0,
+      "n_clips": 200,
+      "after": {
+        "utc": "2026-10-17T01:05:28Z",
+        "load": "18:05  up  7:36, 1 user, load averages: 4.59 4.37 3.90",
+        "therm": [
+          "Note: No thermal warning level has been recorded",
+          "Note: No performance warning level has been recorded",
+          "Note: No CPU power status has been recorded"
+        ]
+      },
+      "model_wall_s": 74.1
+    },
+    {
+      "id": "parakeet-tdt-0.6b-v3",
+      "name": "Parakeet v3",
+      "model_file": "parakeet-tdt-0.6b-v3-Q8_0.gguf",
+      "model_sha256_pinned": "5859f77944efcd8eafa23a6350731960b2b55b2203df51f319665c807d802cc7",
+      "status": "ok",
+      "before": {
+        "utc": "2026-10-17T01:05:28Z",
+        "load": "18:05  up  7:36, 1 user, load averages: 4.59 4.37 3.90",
+        "therm": [
+          "Note: No thermal warning level has been recorded",
+          "Note: No performance warning level has been recorded",
+          "Note: No CPU power status has been recorded"
+        ]
+      },
+      "model_sha256_verified": "5859f77944efcd8eafa23a6350731960b2b55b2203df51f319665c807d802cc7",
+      "ready_line": {
+        "type": "ready",
+        "protocol": "ORK1",
+        "mode": "offline_retained",
+        "sample_format": "mono_f32le",
+        "max_seconds": 30,
+        "backend_requested": "metal",
+        "backend_verified": false,
+        "sdk_version": "transcribe.cpp 0.4.0",
+        "load_ms": 235.995458
+      },
+      "wer": {
+        "test-clean": {
+          "wer_percent": 1.194,
+          "errors": 32,
+          "ref_words": 2680,
+          "sub": 23,
+          "del": 2,
+          "ins": 7,
+          "clips": 100
+        },
+        "test-other": {
+          "wer_percent": 2.978,
+          "errors": 85,
+          "ref_words": 2854,
+          "sub": 70,
+          "del": 5,
+          "ins": 10,
+          "clips": 100
+        },
+        "combined": {
+          "wer_percent": 2.114,
+          "errors": 117,
+          "ref_words": 5534,
+          "sub": 93,
+          "del": 7,
+          "ins": 17,
+          "clips": 200
+        }
+      },
+      "latency_s": {
+        "n_timed": 600,
+        "median": 0.09594179149999604,
+        "p90": 0.18468432120001524,
+        "min": 0.03504129200001671,
+        "max": 0.38674687500000005
+      },
+      "talk_10s_latency_s": {
+        "label": "10-second talk (clips 8-12 s)",
+        "n_timed": 150,
+        "n_clips": 50,
+        "median": 0.09953445800000793,
+        "p90": 0.12188856700000769
+      },
+      "speed_x_realtime": 95.24,
+      "cold_load_s": {
+        "runs": [
+          0.24305745799998135,
+          0.24361283300001446,
+          0.23971658400000706
+        ],
+        "median": 0.24305745799998135,
+        "min": 0.23971658400000706,
+        "max": 0.24361283300001446
+      },
+      "cold_first_result_s": {
+        "runs": [
+          0.3439760409999906,
+          0.3473849169999994,
+          0.34173075000001063
+        ],
+        "median": 0.3439760409999906,
+        "probe_clip": "121-127105-0031",
+        "probe_duration_s": 10.765,
+        "definition": "new process: spawn to the result line of one request (the probe clip)"
+      },
+      "peak_rss_bytes": {
+        "warm_process": 1004929024,
+        "cold_processes_max": 978370560,
+        "method": "wait4() ru_maxrss of the worker process (bytes on macOS)"
+      },
+      "first_request_after_ready": {
+        "clip": "1188-133604-0038",
+        "duration_s": 5.365,
+        "seconds": 0.06242970899998568,
+        "note": "first request after ready (untimed warm-up of clip 1); not in latency stats"
+      },
+      "outputs_differing_across_4_requests": 0,
+      "n_clips": 200,
+      "after": {
+        "utc": "2026-10-17T01:06:56Z",
+        "load": "18:06  up  7:37, 1 user, load averages: 5.99 5.04 4.21",
+        "therm": [
+          "Note: No thermal warning level has been recorded",
+          "Note: No performance warning level has been recorded",
+          "Note: No CPU power status has been recorded"
+        ]
+      },
+      "model_wall_s": 88.3
+    },
+    {
+      "id": "canary-1b-flash",
+      "name": "Canary 1B Flash",
+      "model_file": "canary-1b-flash-Q8_0.gguf",
+      "model_sha256_pinned": "b23202a996d716c8d90c2c0da708ef72c9d340eda0e90c9e4a4436064de980ea",
+      "status": "ok",
+      "before": {
+        "utc": "2026-10-17T01:06:56Z",
+        "load": "18:06  up  7:37, 1 user, load averages: 5.99 5.04 4.21",
+        "therm": [
+          "Note: No thermal warning level has been recorded",
+          "Note: No performance warning level has been recorded",
+          "Note: No CPU power status has been recorded"
+        ]
+      },
+      "model_sha256_verified": "b23202a996d716c8d90c2c0da708ef72c9d340eda0e90c9e4a4436064de980ea",
+      "ready_line": {
+        "type": "ready",
+        "protocol": "ORK1",
+        "mode": "offline_retained",
+        "sample_format": "mono_f32le",
+        "max_seconds": 30,
+        "backend_requested": "metal",
+        "backend_verified": false,
+        "sdk_version": "transcribe.cpp 0.4.0",
+        "load_ms": 332.9685
+      },
+      "wer": {
+        "test-clean": {
+          "wer_percent": 0.933,
+          "errors": 25,
+          "ref_words": 2680,
+          "sub": 22,
+          "del": 2,
+          "ins": 1,
+          "clips": 100
+        },
+        "test-other": {
+          "wer_percent": 3.224,
+          "errors": 92,
+          "ref_words": 2854,
+          "sub": 53,
+          "del": 30,
+          "ins": 9,
+          "clips": 100
+        },
+        "combined": {
+          "wer_percent": 2.114,
+          "errors": 117,
+          "ref_words": 5534,
+          "sub": 75,
+          "del": 32,
+          "ins": 10,
+          "clips": 200
+        }
+      },
+      "latency_s": {
+        "n_timed": 600,
+        "median": 0.15033897899999715,
+        "p90": 0.29227555030001046,
+        "min": 0.04621783299998583,
+        "max": 0.4341892500000313
+      },
+      "talk_10s_latency_s": {
+        "label": "10-second talk (clips 8-12 s)",
+        "n_timed": 150,
+        "n_clips": 50,
+        "median": 0.15317475000000513,
+        "p90": 0.18727094579999176
+      },
+      "speed_x_realtime": 62.44,
+      "cold_load_s": {
+        "runs": [
+          0.413993167000001,
+          0.4072355830000163,
+          0.3948155829999962
+        ],
+        "median": 0.4072355830000163,
+        "min": 0.3948155829999962,
+        "max": 0.413993167000001
+      },
+      "cold_first_result_s": {
+        "runs": [
+          0.5845042919999912,
+          0.5782618750000097,
+          0.552565291999997
+        ],
+        "median": 0.5782618750000097,
+        "probe_clip": "121-127105-0031",
+        "probe_duration_s": 10.765,
+        "definition": "new process: spawn to the result line of one request (the probe clip)"
+      },
+      "peak_rss_bytes": {
+        "warm_process": 1236697088,
+        "cold_processes_max": 1199325184,
+        "method": "wait4() ru_maxrss of the worker process (bytes on macOS)"
+      },
+      "first_request_after_ready": {
+        "clip": "1188-133604-0038",
+        "duration_s": 5.365,
+        "seconds": 0.1012322910000023,
+        "note": "first request after ready (untimed warm-up of clip 1); not in latency stats"
+      },
+      "outputs_differing_across_4_requests": 0,
+      "n_clips": 200,
+      "after": {
+        "utc": "2026-10-17T01:09:11Z",
+        "load": "18:09  up  7:40, 1 user, load averages: 3.38 4.38 4.07",
+        "therm": [
+          "Note: No thermal warning level has been recorded",
+          "Note: No performance warning level has been recorded",
+          "Note: No CPU power status has been recorded"
+        ]
+      },
+      "model_wall_s": 135.1
+    },
+    {
+      "id": "qwen3-asr-0.6b",
+      "name": "Qwen3 ASR",
+      "model_file": "Qwen3-ASR-0.6B-Q8_0.gguf",
+      "model_sha256_pinned": "f081b2d5e23bd669d92cc331d722a8a0681943b8e6f34b48996fd5c319b5acd8",
+      "status": "ok",
+      "before": {
+        "utc": "2026-10-17T01:09:12Z",
+        "load": "18:09  up  7:40, 1 user, load averages: 3.38 4.38 4.07",
+        "therm": [
+          "Note: No thermal warning level has been recorded",
+          "Note: No performance warning level has been recorded",
+          "Note: No CPU power status has been recorded"
+        ]
+      },
+      "model_sha256_verified": "f081b2d5e23bd669d92cc331d722a8a0681943b8e6f34b48996fd5c319b5acd8",
+      "ready_line": {
+        "type": "ready",
+        "protocol": "ORK1",
+        "mode": "offline_retained",
+        "sample_format": "mono_f32le",
+        "max_seconds": 30,
+        "backend_requested": "metal",
+        "backend_verified": false,
+        "sdk_version": "transcribe.cpp 0.4.0",
+        "load_ms": 339.241958
+      },
+      "wer": {
+        "test-clean": {
+          "wer_percent": 1.418,
+          "errors": 38,
+          "ref_words": 2680,
+          "sub": 30,
+          "del": 4,
+          "ins": 4,
+          "clips": 100
+        },
+        "test-other": {
+          "wer_percent": 3.959,
+          "errors": 113,
+          "ref_words": 2854,
+          "sub": 86,
+          "del": 12,
+          "ins": 15,
+          "clips": 100
+        },
+        "combined": {
+          "wer_percent": 2.729,
+          "errors": 151,
+          "ref_words": 5534,
+          "sub": 116,
+          "del": 16,
+          "ins": 19,
+          "clips": 200
+        }
+      },
+      "latency_s": {
+        "n_timed": 600,
+        "median": 0.32110902100001226,
+        "p90": 0.6096802749999997,
+        "min": 0.07636804099996652,
+        "max": 0.9752435840000544
+      },
+      "talk_10s_latency_s": {
+        "label": "10-second talk (clips 8-12 s)",
+        "n_timed": 150,
+        "n_clips": 50,
+        "median": 0.3369737495000038,
+        "p90": 0.41790252910006415
+      },
+      "speed_x_realtime": 29.29,
+      "cold_load_s": {
+        "runs": [
+          0.35162879200004227,
+          0.35620283299999755,
+          0.3493731249999996
+        ],
+        "median": 0.35162879200004227,
+        "min": 0.3493731249999996,
+        "max": 0.35620283299999755
+      },
+      "cold_first_result_s": {
+        "runs": [
+          0.643466042,
+          0.6460251670000048,
+          0.6386977920000163
+        ],
+        "median": 0.643466042,
+        "probe_clip": "121-127105-0031",
+        "probe_duration_s": 10.765,
+        "definition": "new process: spawn to the result line of one request (the probe clip)"
+      },
+      "peak_rss_bytes": {
+        "warm_process": 1603256320,
+        "cold_processes_max": 1594933248,
+        "method": "wait4() ru_maxrss of the worker process (bytes on macOS)"
+      },
+      "first_request_after_ready": {
+        "clip": "1188-133604-0038",
+        "duration_s": 5.365,
+        "seconds": 0.2210165420000294,
+        "note": "first request after ready (untimed warm-up of clip 1); not in latency stats"
+      },
+      "outputs_differing_across_4_requests": 0,
+      "n_clips": 200,
+      "after": {
+        "utc": "2026-10-17T01:13:57Z",
+        "load": "18:13  up  7:44, 1 user, load averages: 3.66 3.84 3.89",
+        "therm": [
+          "Note: No thermal warning level has been recorded",
+          "Note: No performance warning level has been recorded",
+          "Note: No CPU power status has been recorded"
+        ]
+      },
+      "model_wall_s": 285.1
+    },
+    {
+      "id": "moonshine-streaming-medium",
+      "name": "Moonshine Medium",
+      "model_file": "moonshine-streaming-medium-Q8_0.gguf",
+      "model_sha256_pinned": "f7c9564249b508f6012927ec4f9e536087da53a7047f858ca9975bea5f75299e",
+      "status": "ok",
+      "before": {
+        "utc": "2026-10-17T01:13:57Z",
+        "load": "18:13  up  7:44, 1 user, load averages: 3.66 3.84 3.89",
+        "therm": [
+          "Note: No thermal warning level has been recorded",
+          "Note: No performance warning level has been recorded",
+          "Note: No CPU power status has been recorded"
+        ]
+      },
+      "model_sha256_verified": "f7c9564249b508f6012927ec4f9e536087da53a7047f858ca9975bea5f75299e",
+      "ready_line": {
+        "type": "ready",
+        "protocol": "ORK1",
+        "mode": "offline_retained",
+        "sample_format": "mono_f32le",
+        "max_seconds": 30,
+        "backend_requested": "metal",
+        "backend_verified": false,
+        "sdk_version": "transcribe.cpp 0.4.0",
+        "load_ms": 137.78725
+      },
+      "wer": {
+        "test-clean": {
+          "wer_percent": 1.306,
+          "errors": 35,
+          "ref_words": 2680,
+          "sub": 26,
+          "del": 4,
+          "ins": 5,
+          "clips": 100
+        },
+        "test-other": {
+          "wer_percent": 4.625,
+          "errors": 132,
+          "ref_words": 2854,
+          "sub": 104,
+          "del": 10,
+          "ins": 18,
+          "clips": 100
+        },
+        "combined": {
+          "wer_percent": 3.018,
+          "errors": 167,
+          "ref_words": 5534,
+          "sub": 130,
+          "del": 14,
+          "ins": 23,
+          "clips": 200
+        }
+      },
+      "latency_s": {
+        "n_timed": 600,
+        "median": 0.21851625000005015,
+        "p90": 0.609642024999971,
+        "min": 0.021228542000017114,
+        "max": 1.2178946249999854
+      },
+      "talk_10s_latency_s": {
+        "label": "10-second talk (clips 8-12 s)",
+        "n_timed": 150,
+        "n_clips": 50,
+        "median": 0.22713195849996737,
+        "p90": 0.2895012084000086
+      },
+      "speed_x_realtime": 37.66,
+      "cold_load_s": {
+        "runs": [
+          0.15467991600007736,
+          0.14371062500003973,
+          0.1458706670000538
+        ],
+        "median": 0.1458706670000538,
+        "min": 0.14371062500003973,
+        "max": 0.15467991600007736
+      },
+      "cold_first_result_s": {
+        "runs": [
+          0.3750372499999912,
+          0.3610723340000277,
+          0.36627358300006563
+        ],
+        "median": 0.36627358300006563,
+        "probe_clip": "121-127105-0031",
+        "probe_duration_s": 10.765,
+        "definition": "new process: spawn to the result line of one request (the probe clip)"
+      },
+      "peak_rss_bytes": {
+        "warm_process": 1117536256,
+        "cold_processes_max": 816529408,
+        "method": "wait4() ru_maxrss of the worker process (bytes on macOS)"
+      },
+      "first_request_after_ready": {
+        "clip": "1188-133604-0038",
+        "duration_s": 5.365,
+        "seconds": 0.12835358299992095,
+        "note": "first request after ready (untimed warm-up of clip 1); not in latency stats"
+      },
+      "outputs_differing_across_4_requests": 0,
+      "n_clips": 200,
+      "after": {
+        "utc": "2026-10-17T01:17:41Z",
+        "load": "18:17  up  7:48, 1 user, load averages: 2.99 3.42 3.70",
+        "therm": [
+          "Note: No thermal warning level has been recorded",
+          "Note: No performance warning level has been recorded",
+          "Note: No CPU power status has been recorded"
+        ]
+      },
+      "model_wall_s": 224.4
+    },
+    {
+      "id": "whisper-large-v3-turbo",
+      "name": "Whisper Turbo",
+      "model_file": "whisper-large-v3-turbo-Q8_0.gguf",
+      "model_sha256_pinned": "b2e30cc286bc9f3aba4db9099fc7403543497c05ce7100d0d83091ddfd25a183",
+      "status": "ok",
+      "before": {
+        "utc": "2026-10-17T01:17:41Z",
+        "load": "18:17  up  7:48, 1 user, load averages: 2.99 3.42 3.70",
+        "therm": [
+          "Note: No thermal warning level has been recorded",
+          "Note: No performance warning level has been recorded",
+          "Note: No CPU power status has been recorded"
+        ]
+      },
+      "model_sha256_verified": "b2e30cc286bc9f3aba4db9099fc7403543497c05ce7100d0d83091ddfd25a183",
+      "ready_line": {
+        "type": "ready",
+        "protocol": "ORK1",
+        "mode": "offline_retained",
+        "sample_format": "mono_f32le",
+        "max_seconds": 30,
+        "backend_requested": "metal",
+        "backend_verified": false,
+        "sdk_version": "transcribe.cpp 0.4.0",
+        "load_ms": 807.568917
+      },
+      "wer": {
+        "test-clean": {
+          "wer_percent": 1.306,
+          "errors": 35,
+          "ref_words": 2680,
+          "sub": 27,
+          "del": 7,
+          "ins": 1,
+          "clips": 100
+        },
+        "test-other": {
+          "wer_percent": 3.083,
+          "errors": 88,
+          "ref_words": 2854,
+          "sub": 71,
+          "del": 6,
+          "ins": 11,
+          "clips": 100
+        },
+        "combined": {
+          "wer_percent": 2.223,
+          "errors": 123,
+          "ref_words": 5534,
+          "sub": 98,
+          "del": 13,
+          "ins": 12,
+          "clips": 200
+        }
+      },
+      "latency_s": {
+        "n_timed": 600,
+        "median": 0.6260802290000242,
+        "p90": 0.6946709457999759,
+        "min": 0.5477323330001127,
+        "max": 0.7902534589999277
+      },
+      "talk_10s_latency_s": {
+        "label": "10-second talk (clips 8-12 s)",
+        "n_timed": 150,
+        "n_clips": 50,
+        "median": 0.6349171255000101,
+        "p90": 0.6709842669999603
+      },
+      "speed_x_realtime": 16.27,
+      "cold_load_s": {
+        "runs": [
+          0.8280353330000025,
+          0.8163399159999472,
+          0.81750866699997
+        ],
+        "median": 0.81750866699997,
+        "min": 0.8163399159999472,
+        "max": 0.8280353330000025
+      },
+      "cold_first_result_s": {
+        "runs": [
+          1.4379129159999593,
+          1.4231747079999195,
+          1.4249177090000558
+        ],
+        "median": 1.4249177090000558,
+        "probe_clip": "121-127105-0031",
+        "probe_duration_s": 10.765,
+        "definition": "new process: spawn to the result line of one request (the probe clip)"
+      },
+      "peak_rss_bytes": {
+        "warm_process": 1181630464,
+        "cold_processes_max": 1176485888,
+        "method": "wait4() ru_maxrss of the worker process (bytes on macOS)"
+      },
+      "first_request_after_ready": {
+        "clip": "1188-133604-0038",
+        "duration_s": 5.365,
+        "seconds": 0.6056278329999714,
+        "note": "first request after ready (untimed warm-up of clip 1); not in latency stats"
+      },
+      "outputs_differing_across_4_requests": 0,
+      "n_clips": 200,
+      "after": {
+        "utc": "2026-10-17T01:26:13Z",
+        "load": "18:26  up  7:57, 1 user, load averages: 2.98 2.96 3.34",
+        "therm": [
+          "Note: No thermal warning level has been recorded",
+          "Note: No performance warning level has been recorded",
+          "Note: No CPU power status has been recorded"
+        ]
+      },
+      "model_wall_s": 512.3
+    },
+    {
+      "id": "whisper-small.en",
+      "name": "Whisper Small",
+      "model_file": "whisper-small.en-Q8_0.gguf",
+      "model_sha256_pinned": "9614e6b7fda2d26018e4f268aece8ca25a83296ea0b534169a585b740bfd71ef",
+      "status": "ok",
+      "before": {
+        "utc": "2026-10-17T01:26:13Z",
+        "load": "18:26  up  7:57, 1 user, load averages: 2.98 2.96 3.34",
+        "therm": [
+          "Note: No thermal warning level has been recorded",
+          "Note: No performance warning level has been recorded",
+          "Note: No CPU power status has been recorded"
+        ]
+      },
+      "model_sha256_verified": "9614e6b7fda2d26018e4f268aece8ca25a83296ea0b534169a585b740bfd71ef",
+      "ready_line": {
+        "type": "ready",
+        "protocol": "ORK1",
+        "mode": "offline_retained",
+        "sample_format": "mono_f32le",
+        "max_seconds": 30,
+        "backend_requested": "metal",
+        "backend_verified": false,
+        "sdk_version": "transcribe.cpp 0.4.0",
+        "load_ms": 247.176208
+      },
+      "wer": {
+        "test-clean": {
+          "wer_percent": 2.313,
+          "errors": 62,
+          "ref_words": 2680,
+          "sub": 40,
+          "del": 3,
+          "ins": 19,
+          "clips": 100
+        },
+        "test-other": {
+          "wer_percent": 5.957,
+          "errors": 170,
+          "ref_words": 2854,
+          "sub": 131,
+          "del": 14,
+          "ins": 25,
+          "clips": 100
+        },
+        "combined": {
+          "wer_percent": 4.192,
+          "errors": 232,
+          "ref_words": 5534,
+          "sub": 171,
+          "del": 17,
+          "ins": 44,
+          "clips": 200
+        }
+      },
+      "latency_s": {
+        "n_timed": 600,
+        "median": 0.22237808299996686,
+        "p90": 0.3220652871999619,
+        "min": 0.13670208299981823,
+        "max": 0.47443750000002183
+      },
+      "talk_10s_latency_s": {
+        "label": "10-second talk (clips 8-12 s)",
+        "n_timed": 150,
+        "n_clips": 50,
+        "median": 0.22846835400002874,
+        "p90": 0.26034081189986863
+      },
+      "speed_x_realtime": 44.22,
+      "cold_load_s": {
+        "runs": [
+          0.2579844580000099,
+          0.255318250000073,
+          0.2559269589999076
+        ],
+        "median": 0.2559269589999076,
+        "min": 0.255318250000073,
+        "max": 0.2579844580000099
+      },
+      "cold_first_result_s": {
+        "runs": [
+          0.46567666600003577,
+          0.4684991249998802,
+          0.46587833399985357
+        ],
+        "median": 0.46587833399985357,
+        "probe_clip": "121-127105-0031",
+        "probe_duration_s": 10.765,
+        "definition": "new process: spawn to the result line of one request (the probe clip)"
+      },
+      "peak_rss_bytes": {
+        "warm_process": 512147456,
+        "cold_processes_max": 511918080,
+        "method": "wait4() ru_maxrss of the worker process (bytes on macOS)"
+      },
+      "first_request_after_ready": {
+        "clip": "1188-133604-0038",
+        "duration_s": 5.365,
+        "seconds": 0.19125558299992917,
+        "note": "first request after ready (untimed warm-up of clip 1); not in latency stats"
+      },
+      "outputs_differing_across_4_requests": 0,
+      "n_clips": 200,
+      "after": {
+        "utc": "2026-10-17T01:29:22Z",
+        "load": "18:29  up 8 hrs, 1 user, load averages: 3.62 3.19 3.35",
+        "therm": [
+          "Note: No thermal warning level has been recorded",
+          "Note: No performance warning level has been recorded",
+          "Note: No CPU power status has been recorded"
+        ]
+      },
+      "model_wall_s": 188.5
+    },
+    {
+      "id": "whisper-base.en",
+      "name": "Whisper Base",
+      "model_file": "whisper-base.en-Q8_0.gguf",
+      "model_sha256_pinned": "3b46ca40bccbf7609c68d88a36d96077a04ca7c87f2060ede06f129fac3e7652",
+      "status": "ok",
+      "before": {
+        "utc": "2026-10-17T01:29:22Z",
+        "load": "18:29  up 8 hrs, 1 user, load averages: 3.62 3.19 3.35",
+        "therm": [
+          "Note: No thermal warning level has been recorded",
+          "Note: No performance warning level has been recorded",
+          "Note: No CPU power status has been recorded"
+        ]
+      },
+      "model_sha256_verified": "3b46ca40bccbf7609c68d88a36d96077a04ca7c87f2060ede06f129fac3e7652",
+      "ready_line": {
+        "type": "ready",
+        "protocol": "ORK1",
+        "mode": "offline_retained",
+        "sample_format": "mono_f32le",
+        "max_seconds": 30,
+        "backend_requested": "metal",
+        "backend_verified": false,
+        "sdk_version": "transcribe.cpp 0.4.0",
+        "load_ms": 125.172542
+      },
+      "wer": {
+        "test-clean": {
+          "wer_percent": 3.731,
+          "errors": 100,
+          "ref_words": 2680,
+          "sub": 75,
+          "del": 13,
+          "ins": 12,
+          "clips": 100
+        },
+        "test-other": {
+          "wer_percent": 8.339,
+          "errors": 238,
+          "ref_words": 2854,
+          "sub": 189,
+          "del": 19,
+          "ins": 30,
+          "clips": 100
+        },
+        "combined": {
+          "wer_percent": 6.108,
+          "errors": 338,
+          "ref_words": 5534,
+          "sub": 264,
+          "del": 32,
+          "ins": 42,
+          "clips": 200
+        }
+      },
+      "latency_s": {
+        "n_timed": 600,
+        "median": 0.09256443749995924,
+        "p90": 0.13887570380002218,
+        "min": 0.050864499999988766,
+        "max": 0.2110507500001404
+      },
+      "talk_10s_latency_s": {
+        "label": "10-second talk (clips 8-12 s)",
+        "n_timed": 150,
+        "n_clips": 50,
+        "median": 0.09472658300001058,
+        "p90": 0.11011909999986073
+      },
+      "speed_x_realtime": 106.42,
+      "cold_load_s": {
+        "runs": [
+          0.13914991699994061,
+          0.12819325000009485,
+          0.14087683299999298
+        ],
+        "median": 0.13914991699994061,
+        "min": 0.12819325000009485,
+        "max": 0.14087683299999298
+      },
+      "cold_first_result_s": {
+        "runs": [
+          0.23822158300004048,
+          0.21632329199997002,
+          0.22987783300004594
+        ],
+        "median": 0.22987783300004594,
+        "probe_clip": "121-127105-0031",
+        "probe_duration_s": 10.765,
+        "definition": "new process: spawn to the result line of one request (the probe clip)"
+      },
+      "peak_rss_bytes": {
+        "warm_process": 265469952,
+        "cold_processes_max": 259358720,
+        "method": "wait4() ru_maxrss of the worker process (bytes on macOS)"
+      },
+      "first_request_after_ready": {
+        "clip": "1188-133604-0038",
+        "duration_s": 5.365,
+        "seconds": 0.07512079200000699,
+        "note": "first request after ready (untimed warm-up of clip 1); not in latency stats"
+      },
+      "outputs_differing_across_4_requests": 0,
+      "n_clips": 200,
+      "after": {
+        "utc": "2026-10-17T01:30:41Z",
+        "load": "18:30  up  8:01, 1 user, load averages: 3.15 3.13 3.31",
+        "therm": [
+          "Note: No thermal warning level has been recorded",
+          "Note: No performance warning level has been recorded",
+          "Note: No CPU power status has been recorded"
+        ]
+      },
+      "model_wall_s": 78.6
+    }
+  ],
+  "not_measured": [
+    {
+      "id": "apple",
+      "name": "Apple",
+      "status": "not measured",
+      "reason": "needs Speech Recognition permission in an app context (SFSpeechRecognizer); this bench runs no app and asks for no permission"
+    }
+  ]
+}

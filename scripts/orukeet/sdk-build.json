@@ -1,0 +1,75 @@
+{
+  "lock": {
+    "schema_version": 1,
+    "sources": {
+      "nemo": {
+        "repository": "https://github.com/NVIDIA/NeMo-Speech.cpp.git",
+        "commit": "a5b6953c4a579a2bbd1c0913ad8a85c2a4d99953"
+      },
+      "ggml": {
+        "repository": "https://github.com/ggml-org/ggml.git",
+        "commit": "c03b4e2bcece5134827881af90242086daf75be5"
+      },
+      "sentencepiece": {
+        "repository": "https://github.com/google/sentencepiece.git",
+        "commit": "17d7580d6407802f85855d2cc9190634e2c95624"
+      }
+    },
+    "patches": {
+      "ggml": [
+        {
+          "path": "ggml-patches/0021-metal-asr-kernels.patch",
+          "sha256": "b4aa8f61d3913ab88dcb47511bb7c05cc66710c215b545dd3b482aaa66b8aff1"
+        },
+        {
+          "path": "ggml-patches/0022-metal-asr-fusions.patch",
+          "sha256": "8a07b43643a4fcea9662b6fb0ac425545e3b29eb45a32c27d885edb1eedb655e"
+        }
+      ],
+      "nemo": [
+        {
+          "path": "nemo-patches/0001-metal-relative-position-cache.patch",
+          "sha256": "2104a85b61809a9b1fd5c29a020f8b94033211d610b8fa146e5a15633437e940"
+        }
+      ]
+    }
+  },
+  "prepared_sources": {
+    "nemo": {
+      "commit": "a5b6953c4a579a2bbd1c0913ad8a85c2a4d99953",
+      "tree": "edb81aa0886085b1a1b5d0cfe88f27af635e2463"
+    },
+    "ggml": {
+      "commit": "c03b4e2bcece5134827881af90242086daf75be5",
+      "tree": "d0da2a190414cdcf4f7977e34fb22e38934b056f"
+    },
+    "sentencepiece": {
+      "commit": "17d7580d6407802f85855d2cc9190634e2c95624",
+      "tree": "6d2b48ff57265838b00264c0d99aeb159ac8aa95"
+    }
+  },
+  "build_script_sha256": "b9545b4f46c2fdbd290d5dd3ba15c45049c6770a4d2d23fed9c498ecabd6fa32",
+  "platform": "macOS-26.5-arm64-arm-64bit",
+  "cmake": "cmake version 4.3.1",
+  "compiler": "Apple clang version 21.0.0 (clang-2100.0.123.102)",
+  "libraries": {
+    "libggml-base.0.12.0.dylib": "6bb66294aa8d9e77c308f178d1b334a3155eae9b0c4570f0342ca3a47faedd88",
+    "libggml-base.0.dylib": "6bb66294aa8d9e77c308f178d1b334a3155eae9b0c4570f0342ca3a47faedd88",
+    "libggml-base.dylib": "6bb66294aa8d9e77c308f178d1b334a3155eae9b0c4570f0342ca3a47faedd88",
+    "libggml-blas.0.12.0.dylib": "2afa2b19c56572b6378400a4223948e5a85627c5d16fb8ba12e2ef01c6f26087",
+    "libggml-blas.0.dylib": "2afa2b19c56572b6378400a4223948e5a85627c5d16fb8ba12e2ef01c6f26087",
+    "libggml-blas.dylib": "2afa2b19c56572b6378400a4223948e5a85627c5d16fb8ba12e2ef01c6f26087",
+    "libggml-cpu.0.12.0.dylib": "ddea8fa270f0103541efa4096d0e1534fc2e852a8f4fbb69721b135c40adea97",
+    "libggml-cpu.0.dylib": "ddea8fa270f0103541efa4096d0e1534fc2e852a8f4fbb69721b135c40adea97",
+    "libggml-cpu.dylib": "ddea8fa270f0103541efa4096d0e1534fc2e852a8f4fbb69721b135c40adea97",
+    "libggml-metal.0.12.0.dylib": "c8f844dc9d64800de3d618025016b7fe99176f77d734b69b084bd724ca0f9f25",
+    "libggml-metal.0.dylib": "c8f844dc9d64800de3d618025016b7fe99176f77d734b69b084bd724ca0f9f25",
+    "libggml-metal.dylib": "c8f844dc9d64800de3d618025016b7fe99176f77d734b69b084bd724ca0f9f25",
+    "libggml.0.12.0.dylib": "787c6dc0f0b79d77199915dd517cc7608ef8a18fa3550762f76485a671778f9b",
+    "libggml.0.dylib": "787c6dc0f0b79d77199915dd517cc7608ef8a18fa3550762f76485a671778f9b",
+    "libggml.dylib": "787c6dc0f0b79d77199915dd517cc7608ef8a18fa3550762f76485a671778f9b",
+    "libnemo_speech_asr.dylib": "6491103c1c7bbb2bef6976ebd8be9128c754bca5fe3472412a9119c59c317f33",
+    "libnemo_speech_asr_c.1.dylib": "4eac7e4412e50ca8e54e1684324837fec625bb3f1d0a3b8d21b259f33ad477ca",
+    "libnemo_speech_asr_c.dylib": "4eac7e4412e50ca8e54e1684324837fec625bb3f1d0a3b8d21b259f33ad477ca"
+  }
+}
