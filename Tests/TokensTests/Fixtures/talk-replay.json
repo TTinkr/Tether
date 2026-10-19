@@ -1,0 +1,761 @@
+{
+ "version": 1,
+ "cases": [
+  {
+   "id": "num-port-19-60-80",
+   "category": "numbers",
+   "input": "port nineteen sixty eighty",
+   "expected_raw": "port 19 60 80",
+   "expected_tagged": "port <num>19 60 80</num>"
+  },
+  {
+   "id": "num-line-18-99",
+   "category": "numbers",
+   "input": "line eighteen ninety nine",
+   "expected_raw": "line 18 99",
+   "expected_tagged": "line <num>18 99</num>"
+  },
+  {
+   "id": "num-zero-oh",
+   "category": "numbers",
+   "input": "zero oh one nineteen",
+   "expected_raw": "0 0 1 19",
+   "expected_tagged": "<num>0 0 1 19</num>"
+  },
+  {
+   "id": "num-tens-join",
+   "category": "numbers",
+   "input": "twenty one twenty two",
+   "expected_raw": "21 22",
+   "expected_tagged": "<num>21 22</num>"
+  },
+  {
+   "id": "num-two-25",
+   "category": "numbers",
+   "input": "two twenty five",
+   "expected_raw": "2 25",
+   "expected_tagged": "<num>2 25</num>"
+  },
+  {
+   "id": "num-comma-join",
+   "category": "numbers",
+   "input": "twenty, one, two",
+   "expected_raw": "20 1 2",
+   "expected_tagged": "<num>20 1 2</num>",
+   "note": "Commas are list boundaries: a tens word never joins a unit across one."
+  },
+  {
+   "id": "num-sentence",
+   "category": "numbers",
+   "input": "Ports sixty ninety eighty, then stop.",
+   "expected_raw": "Ports 60 90 80, then stop.",
+   "expected_tagged": "Ports <num>60 90 80</num>, then stop."
+  },
+  {
+   "id": "num-digits-stay",
+   "category": "numbers",
+   "input": "version 1 2 3",
+   "expected_raw": "version 1 2 3",
+   "expected_tagged": "version <num>1 2 3</num>"
+  },
+  {
+   "id": "num-two-stay-prose",
+   "category": "numbers",
+   "input": "Open port eighty eighty then go.",
+   "expected_raw": "Open port eighty eighty then go.",
+   "expected_tagged": "Open port eighty eighty then go."
+  },
+  {
+   "id": "num-prose-two-or-three",
+   "category": "numbers",
+   "input": "I have two or three ideas",
+   "expected_raw": "I have two or three ideas",
+   "expected_tagged": "I have two or three ideas"
+  },
+  {
+   "id": "num-prose-one-of-two",
+   "category": "numbers",
+   "input": "one of the two",
+   "expected_raw": "one of the two",
+   "expected_tagged": "one of the two"
+  },
+  {
+   "id": "num-backtick",
+   "category": "numbers",
+   "input": "`one two three`",
+   "expected_raw": "`one two three`",
+   "expected_tagged": "`one two three`"
+  },
+  {
+   "id": "num-case",
+   "category": "numbers",
+   "input": "Nineteen Sixty Eighty",
+   "expected_raw": "19 60 80",
+   "expected_tagged": "<num>19 60 80</num>"
+  },
+  {
+   "id": "num-port-8080",
+   "category": "numbers",
+   "input": "set the port to eighty eighty",
+   "expected_raw": "set the port to 8080",
+   "expected_fail": true,
+   "reason": "Two-token runs stay prose by design; a 'port' cue could license joining eighty eighty into 8080."
+  },
+  {
+   "id": "num-hundred",
+   "category": "numbers",
+   "input": "use one hundred and twenty workers",
+   "expected_raw": "use 120 workers",
+   "expected_fail": true,
+   "reason": "NumberTalk has no hundred/thousand words; they end a run, so the whole phrase stays spoken."
+  },
+  {
+   "id": "num-decimal",
+   "category": "numbers",
+   "input": "bump it to three point five",
+   "expected_raw": "bump it to 3.5",
+   "expected_fail": true,
+   "reason": "No 'point' decimal support; a single spoken number stays prose."
+  },
+  {
+   "id": "agent-cloud-code-fable",
+   "category": "agents",
+   "input": "consult cloud code fable on the taste here",
+   "expected_raw": "consult Claude Code fable on the taste here",
+   "agent_name_fixes": true
+  },
+  {
+   "id": "agent-codecs-session",
+   "category": "agents",
+   "input": "send that to codecs in this session",
+   "expected_raw": "send that to Codex in this session",
+   "agent_name_fixes": true
+  },
+  {
+   "id": "agent-soul-planning",
+   "category": "agents",
+   "input": "route planning to soul and checks to terra",
+   "expected_raw": "route planning to Sol and checks to terra",
+   "agent_name_fixes": true
+  },
+  {
+   "id": "agent-both",
+   "category": "agents",
+   "input": "cloud code and codecs both read the worktree",
+   "expected_raw": "Claude Code and Codex both read the worktree",
+   "agent_name_fixes": true
+  },
+  {
+   "id": "agent-keep-audio-codecs",
+   "category": "agents",
+   "input": "audio codecs for the mp3",
+   "expected_raw": "audio codecs for the mp3",
+   "agent_name_fixes": true
+  },
+  {
+   "id": "agent-keep-soul-music",
+   "category": "agents",
+   "input": "soul music all night",
+   "expected_raw": "soul music all night",
+   "agent_name_fixes": true
+  },
+  {
+   "id": "agent-keep-bucket",
+   "category": "agents",
+   "input": "cloud code storage bucket",
+   "expected_raw": "cloud code storage bucket",
+   "agent_name_fixes": true
+  },
+  {
+   "id": "agent-clawed-code",
+   "category": "agents",
+   "input": "clawed code is running the tests",
+   "expected_raw": "Claude Code is running the tests",
+   "agent_name_fixes": true
+  },
+  {
+   "id": "agent-chat-gpt",
+   "category": "agents",
+   "input": "ask chat gpt about it",
+   "expected_raw": "ask ChatGPT about it",
+   "agent_name_fixes": true
+  },
+  {
+   "id": "agent-open-a-i",
+   "category": "agents",
+   "input": "open a i shipped a model",
+   "expected_raw": "OpenAI shipped a model",
+   "agent_name_fixes": true
+  },
+  {
+   "id": "agent-quen",
+   "category": "agents",
+   "input": "run quen locally",
+   "expected_raw": "run Qwen locally",
+   "agent_name_fixes": true
+  },
+  {
+   "id": "agent-quinn-model",
+   "category": "agents",
+   "input": "load the quinn model in ollama",
+   "expected_raw": "load the Qwen model in ollama",
+   "agent_name_fixes": true
+  },
+  {
+   "id": "agent-quinn-person",
+   "category": "agents",
+   "input": "Quinn said hello",
+   "expected_raw": "Quinn said hello",
+   "agent_name_fixes": true
+  },
+  {
+   "id": "agent-kimi",
+   "category": "agents",
+   "input": "ask kimi to review",
+   "expected_raw": "ask KIMI to review",
+   "expected_tagged": "ask <char>KIMI</char> to review",
+   "agent_name_fixes": true
+  },
+  {
+   "id": "agent-bare-cloud",
+   "category": "agents",
+   "input": "ask cloud to review the agent diff",
+   "expected_raw": "ask Claude to review the agent diff",
+   "expected_fail": true,
+   "reason": "Only 'cloud code' is gated; bare 'cloud' for Claude in an agent sentence is not corrected.",
+   "agent_name_fixes": true
+  },
+  {
+   "id": "agent-code-x",
+   "category": "agents",
+   "input": "hand the packaging to code x on gpt luna",
+   "expected_raw": "hand the packaging to Codex on gpt luna",
+   "expected_fail": true,
+   "reason": "'code x' (split mishearing of Codex) has no alias; only 'codecs' is covered.",
+   "agent_name_fixes": true
+  },
+  {
+   "id": "sp-riley",
+   "category": "spelled",
+   "input": "my name is r i l e y",
+   "expected_raw": "my name is RILEY",
+   "expected_tagged": "my name is <char>RILEY</char>"
+  },
+  {
+   "id": "sp-usb",
+   "category": "spelled",
+   "input": "plug in the U-S-B cable",
+   "expected_raw": "plug in the USB cable",
+   "expected_tagged": "plug in the <char>USB</char> cable"
+  },
+  {
+   "id": "sp-usa",
+   "category": "spelled",
+   "input": "the U S A team",
+   "expected_raw": "the USA team",
+   "expected_tagged": "the <char>USA</char> team"
+  },
+  {
+   "id": "sp-api-sdk-stay",
+   "category": "spelled",
+   "input": "the API SDK docs",
+   "expected_raw": "the API SDK docs",
+   "expected_tagged": "the API SDK docs"
+  },
+  {
+   "id": "sp-file-literal",
+   "category": "spelled",
+   "input": "open Package.swift and main.swift",
+   "expected_raw": "open Package.swift and main.swift"
+  },
+  {
+   "id": "sp-flag-literal",
+   "category": "spelled",
+   "input": "run it with --verbose and -n 3",
+   "expected_raw": "run it with --verbose and -n 3"
+  },
+  {
+   "id": "sp-camel-literal",
+   "category": "spelled",
+   "input": "rename talkModel to TalkModel",
+   "expected_raw": "rename talkModel to TalkModel"
+  },
+  {
+   "id": "sp-path-tinkr",
+   "category": "spelled",
+   "input": "open ~/Documents/Tinkr in the terminal",
+   "expected_raw": "open ~/Documents/Tinkr in the terminal",
+   "note": "Regression for the path-safe tinkr alias (was lowercased to ~/Documents/tinkr before 2026-10-13)."
+  },
+  {
+   "id": "sp-path-plain",
+   "category": "spelled",
+   "input": "cd ~/Documents/Codex/2026-10-05",
+   "expected_raw": "cd ~/Documents/Codex/2026-10-05"
+  },
+  {
+   "id": "sp-snake",
+   "category": "spelled",
+   "input": "set FOO_BAR to true",
+   "expected_raw": "set FOO_BAR to true"
+  },
+  {
+   "id": "sp-backtick-code",
+   "category": "spelled",
+   "input": "call `renderTranscript` first",
+   "expected_raw": "call `renderTranscript` first"
+  },
+  {
+   "id": "sp-readme-dot-md",
+   "category": "spelled",
+   "input": "update readme dot md",
+   "expected_raw": "update README.md",
+   "expected_fail": true,
+   "reason": "No spoken 'dot' → '.' for file names; Character Talk only joins single spelled characters."
+  },
+  {
+   "id": "sp-dash-dash",
+   "category": "spelled",
+   "input": "pass dash dash help",
+   "expected_raw": "pass --help",
+   "expected_fail": true,
+   "reason": "No spoken flag syntax ('dash dash') support."
+  },
+  {
+   "id": "sp-tilde-path",
+   "category": "spelled",
+   "input": "go to tilde slash documents slash tinkr",
+   "expected_raw": "go to ~/Documents/Tinkr",
+   "expected_fail": true,
+   "reason": "No spoken path syntax ('tilde', 'slash')."
+  },
+  {
+   "id": "sp-camel-spoken",
+   "category": "spelled",
+   "input": "call camel case talk model",
+   "expected_raw": "call talkModel",
+   "expected_fail": true,
+   "reason": "No spoken 'camel case' identifier builder."
+  },
+  {
+   "id": "cmd-talk-characters",
+   "category": "commands",
+   "input": "talk characters r i l e y end talk characters",
+   "expected_raw": "RILEY",
+   "expected_tagged": "<char>RILEY</char>"
+  },
+  {
+   "id": "cmd-talk-characters-then-prose",
+   "category": "commands",
+   "input": "talk characters k e y end talk characters done",
+   "expected_raw": "KEY done",
+   "expected_tagged": "<char>KEY</char> done"
+  },
+  {
+   "id": "cmd-start-tc",
+   "category": "commands",
+   "input": "start t c a b c end t c",
+   "expected_raw": "ABC",
+   "expected_tagged": "<char>ABC</char>"
+  },
+  {
+   "id": "cmd-leading-tc",
+   "category": "commands",
+   "input": "t c x y z",
+   "expected_raw": "XYZ",
+   "expected_tagged": "<char>XYZ</char>"
+  },
+  {
+   "id": "cmd-unclosed",
+   "category": "commands",
+   "input": "my key is talk characters q w e",
+   "expected_raw": "my key is QWE",
+   "expected_tagged": "my key is <char>QWE</char>"
+  },
+  {
+   "id": "cmd-period-literal",
+   "category": "commands",
+   "input": "end it with a period",
+   "expected_raw": "end it with a period"
+  },
+  {
+   "id": "cmd-new-line-wanted",
+   "category": "commands",
+   "input": "first point new line second point",
+   "expected_raw": "first point\nsecond point",
+   "expected_fail": true,
+   "reason": "Spoken punctuation commands ('new line', 'period', 'comma') are not implemented; this is the desired behavior if they are added.",
+   "note": "Current behaviour: no spoken 'new line' command exists, so these words paste literally as spoken. Kept as one target row, not a must-pass literal twin."
+  },
+  {
+   "id": "pause-one-split",
+   "category": "pauses",
+   "input": "so the plan is ready then we ship",
+   "expected_raw": "so the plan is ready\n\nTHINK (2.5000s)\n\nthen we ship",
+   "pause": {
+    "starts": [
+     0,
+     0.3,
+     0.6,
+     0.9,
+     1.2,
+     4.0,
+     4.3,
+     4.6
+    ],
+    "pauses": [
+     [
+      1.45,
+      3.95
+     ]
+    ]
+   }
+  },
+  {
+   "id": "pause-two-splits",
+   "category": "pauses",
+   "input": "first idea second idea third idea",
+   "expected_raw": "first idea\n\nTHINK (2.0000s)\n\nsecond idea\n\nTHINK (1.5000s)\n\nthird idea",
+   "pause": {
+    "starts": [
+     0,
+     0.3,
+     2.6,
+     2.9,
+     4.7,
+     5.0
+    ],
+    "pauses": [
+     [
+      0.55,
+      2.55
+     ],
+     [
+      3.15,
+      4.65
+     ]
+    ]
+   }
+  },
+  {
+   "id": "pause-untimed",
+   "category": "pauses",
+   "input": "no timing came back",
+   "expected_raw": "no timing came back\n\nTHINK (unplaced ×1 · 2.0000s · measured silence, position not aligned to words)",
+   "pause": {
+    "starts": [],
+    "pauses": [
+     [
+      1.0,
+      3.0
+     ]
+    ]
+   }
+  },
+  {
+   "id": "pause-closing",
+   "category": "pauses",
+   "input": "done for now",
+   "expected_raw": "done for now\n\nTHINK (1.5000s)",
+   "pause": {
+    "starts": [
+     0,
+     0.3,
+     0.6
+    ],
+    "pauses": [
+     [
+      0.85,
+      2.35
+     ]
+    ]
+   }
+  },
+  {
+   "id": "pause-before-first",
+   "category": "pauses",
+   "input": "late start here",
+   "expected_raw": "late start here\n\nTHINK (unplaced ×1 · 2.0000s · measured silence, position not aligned to words)",
+   "pause": {
+    "starts": [
+     3.0,
+     3.3,
+     3.6
+    ],
+    "pauses": [
+     [
+      0.5,
+      2.5
+     ]
+    ]
+   }
+  },
+  {
+   "id": "pause-inside-spelling",
+   "category": "pauses",
+   "input": "my name is r i l e y ok",
+   "expected_raw": "my name is RILEY\n\nTHINK (2.0000s)\n\nok",
+   "expected_tagged": "my name is <char>RILEY</char>\n\nTHINK (2.0000s)\n\nok",
+   "pause": {
+    "starts": [
+     0,
+     0.3,
+     0.6,
+     0.9,
+     1.2,
+     3.6,
+     3.9,
+     4.2,
+     4.5
+    ],
+    "pauses": [
+     [
+      1.45,
+      3.45
+     ]
+    ]
+   },
+   "expected_fail": true,
+   "reason": "A silence inside a spelled run should snap to the end of the run. Today the pipeline keeps the words intact and footnotes this silence as unplaced (LexicalFidelity fallback) instead of splitting the token."
+  },
+  {
+   "id": "pause-inside-number",
+   "category": "pauses",
+   "input": "port nineteen sixty eighty",
+   "expected_raw": "port 19 60 80\n\nTHINK (2.0000s)",
+   "pause": {
+    "starts": [
+     0,
+     0.3,
+     2.7,
+     3.0
+    ],
+    "pauses": [
+     [
+      0.55,
+      2.55
+     ]
+    ]
+   },
+   "expected_fail": true,
+   "reason": "A silence inside a number run should snap to the end of the run. Today the pipeline keeps the words intact and footnotes this silence as unplaced (LexicalFidelity fallback) instead of splitting the token."
+  },
+  {
+   "id": "pause-after-number",
+   "category": "pauses",
+   "input": "port nineteen sixty eighty then go",
+   "expected_raw": "port 19 60 80\n\nTHINK (2.0000s)\n\nthen go",
+   "expected_tagged": "port <num>19 60 80</num>\n\nTHINK (2.0000s)\n\nthen go",
+   "pause": {
+    "starts": [
+     0,
+     0.3,
+     0.6,
+     0.9,
+     3.2,
+     3.5
+    ],
+    "pauses": [
+     [
+      1.15,
+      3.15
+     ]
+    ]
+   }
+  },
+  {
+   "id": "pause-brand-segment",
+   "category": "pauses",
+   "input": "send that to codecs this session then wait",
+   "expected_raw": "send that to Codex this session\n\nTHINK (2.0000s)\n\nthen wait",
+   "pause": {
+    "starts": [
+     0,
+     0.3,
+     0.6,
+     0.9,
+     1.2,
+     1.5,
+     3.8,
+     4.1
+    ],
+    "pauses": [
+     [
+      1.75,
+      3.75
+     ]
+    ]
+   },
+   "agent_name_fixes": true
+  },
+  {
+   "id": "pause-splits-agent-name",
+   "category": "pauses",
+   "input": "ask cloud code agent to review",
+   "expected_raw": "ask Claude Code\n\nTHINK (2.0000s)\n\nagent to review",
+   "pause": {
+    "starts": [
+     0,
+     0.3,
+     2.6,
+     2.9,
+     3.2,
+     3.5
+    ],
+    "pauses": [
+     [
+      0.55,
+      2.55
+     ]
+    ]
+   },
+   "note": "A pause inside a multi-word name would brand differently per segment; LexicalFidelity falls back to literal words.",
+   "expected_fail": true,
+   "reason": "A silence inside a brand name should snap to the end of the name. Today the pipeline keeps the words intact and footnotes this silence as unplaced (LexicalFidelity fallback) instead of splitting the token."
+  },
+  {
+   "id": "pause-overlap-not-placed",
+   "category": "pauses",
+   "input": "wait for it now",
+   "expected_raw": "wait for it now\n\nTHINK (unplaced ×1 · 2.0000s · measured silence, position not aligned to words)",
+   "pause": {
+    "starts": [
+     0,
+     0.3,
+     1.0,
+     3.0
+    ],
+    "pauses": [
+     [
+      0.55,
+      2.55
+     ]
+    ]
+   },
+   "note": "Word 'it' starts inside the silence and ends before it closes: contradicting timestamps are never guessed."
+  },
+  {
+   "id": "prose-01",
+   "category": "prose",
+   "input": "I think we should ship this tonight, then rest.",
+   "expected_raw": "I think we should ship this tonight, then rest.",
+   "expected_tagged": "I think we should ship this tonight, then rest."
+  },
+  {
+   "id": "prose-02",
+   "category": "prose",
+   "input": "The cloud is down again.",
+   "expected_raw": "The cloud is down again.",
+   "expected_tagged": "The cloud is down again."
+  },
+  {
+   "id": "prose-03",
+   "category": "prose",
+   "input": "We talked about soul music and audio codecs.",
+   "expected_raw": "We talked about soul music and audio codecs.",
+   "expected_tagged": "We talked about soul music and audio codecs."
+  },
+  {
+   "id": "prose-04",
+   "category": "prose",
+   "input": "Take two or three minutes.",
+   "expected_raw": "Take two or three minutes.",
+   "expected_tagged": "Take two or three minutes."
+  },
+  {
+   "id": "prose-05",
+   "category": "prose",
+   "input": "She said: it's fine — really.",
+   "expected_raw": "She said: it's fine — really.",
+   "expected_tagged": "She said: it's fine — really."
+  },
+  {
+   "id": "prose-06",
+   "category": "prose",
+   "input": "Plan A or plan B?",
+   "expected_raw": "Plan A or plan B?",
+   "expected_tagged": "Plan A or plan B?"
+  },
+  {
+   "id": "prose-07",
+   "category": "prose",
+   "input": "Mr. Smith arrived at 9.",
+   "expected_raw": "Mr. Smith arrived at 9.",
+   "expected_tagged": "Mr. Smith arrived at 9."
+  },
+  {
+   "id": "prose-08",
+   "category": "prose",
+   "input": "first line\nsecond line",
+   "expected_raw": "first line\nsecond line",
+   "expected_tagged": "first line\nsecond line"
+  },
+  {
+   "id": "prose-09",
+   "category": "prose",
+   "input": "Is it O K with you",
+   "expected_raw": "Is it O K with you",
+   "expected_tagged": "Is it O K with you"
+  },
+  {
+   "id": "prose-10",
+   "category": "prose",
+   "input": "e.g. the U.S. team",
+   "expected_raw": "e.g. the U.S. team",
+   "expected_tagged": "e.g. the U.S. team"
+  },
+  {
+   "id": "prose-11",
+   "category": "prose",
+   "input": "Party time 🎉 tonight",
+   "expected_raw": "Party time 🎉 tonight",
+   "expected_tagged": "Party time 🎉 tonight"
+  },
+  {
+   "id": "prose-12",
+   "category": "prose",
+   "input": "the quinn family reunion",
+   "expected_raw": "the quinn family reunion",
+   "expected_tagged": "the quinn family reunion"
+  },
+  {
+   "id": "prose-trim",
+   "category": "prose",
+   "input": "  hello there  ",
+   "expected_raw": "hello there",
+   "expected_tagged": "hello there"
+  },
+  {
+   "id": "prose-grid",
+   "category": "prose",
+   "input": "make a 2 x 3 grid",
+   "expected_raw": "make a 2 x 3 grid",
+   "expected_tagged": "make a 2 x 3 grid",
+   "expected_fail": true,
+   "reason": "Character Talk's automatic run takes any three single characters, so the article 'a' plus '2 x 3' becomes A2X3; needs a digit/article guard."
+  },
+  {
+   "id": "prose-tinker-verb",
+   "category": "prose",
+   "input": "I like to tinker with old radios",
+   "expected_raw": "I like to tinker with old radios",
+   "expected_fail": true,
+   "reason": "The tinker→tinkr brand alias is unconditional (TalkVocabulary.correctionAliases); it needs a context gate like ContextualAlias."
+  },
+  {
+   "id": "agent-default-off-raw",
+   "category": "agents",
+   "input": "send that to codecs in this session",
+   "expected_raw": "send that to codecs in this session",
+   "note": "Fix Agent Names is opt-in; with it off the raw route delivers words as recognized."
+  },
+  {
+   "id": "agent-link-kept",
+   "category": "agents",
+   "input": "https://example.com/chat/codecs is the agent link",
+   "expected_raw": "https://example.com/chat/codecs is the agent link",
+   "agent_name_fixes": true,
+   "note": "Links and paths are protected even with the setting on."
+  }
+ ]
+}

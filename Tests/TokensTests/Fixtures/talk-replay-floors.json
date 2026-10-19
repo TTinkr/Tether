@@ -1,0 +1,13 @@
+{
+ "version": 2,
+ "measured": "2026-10-13 tonight's passing counts per category. pauses counts 8 of 11: its three mid-token silences (inside a spelled run, a number run, a brand name) are expected_fail targets, so today's unplaced-footnote fallback is not read as the wanted placement. · 2026-10-13 rc69 stack: agents +2 (default-off raw + protected link)",
+ "rule": "Each floor is the minimum number of passing cases in that category. It never decreases. Adding an honest expected_fail case never lowers it; when an expected_fail case starts passing, drop its expected_fail and raise the floor by one. The scoreboard's Rate column is for reading only.",
+ "floors": {
+  "numbers": 13,
+  "agents": 16,
+  "spelled": 11,
+  "commands": 6,
+  "pauses": 8,
+  "prose": 13
+ }
+}

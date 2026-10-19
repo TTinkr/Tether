@@ -1,0 +1,36 @@
+{
+  "_source": "Sources/TokensCore/Settings/SpeechModelCatalog.swift. URL scheme for HF rows is the hf() helper: https://huggingface.co/handy-computer/<repo>/resolve/<commit>/<file>. Apple is not here: it needs Speech Recognition permission in an app context and is not measured.",
+  "models": [
+    {"id": "orukeet", "name": "Orukeet", "worker": "orukeet",
+     "url": "https://huggingface.co/oruk/orukeet/resolve/b59c13a733fce5cf193230d0fa317ee7f145a108/orukeet-v0.1.0-q8.gguf",
+     "file": "orukeet-v0.1.0-q8.gguf", "sha256": "93ce19c6d8244acbfea980eeaf970531d4f216171578ef8e041dcc2d070a45bd", "bytes": 714456704},
+    {"id": "parakeet-tdt-0.6b-v2", "name": "Parakeet v2", "worker": "transcribe",
+     "url": "https://huggingface.co/handy-computer/parakeet-tdt-0.6b-v2-gguf/resolve/382796e405a9fe37145938dccbabfb25e93e4286/parakeet-tdt-0.6b-v2-Q8_0.gguf",
+     "file": "parakeet-tdt-0.6b-v2-Q8_0.gguf", "sha256": "f0d0e99cebb6d3b83f1f7069b82b5d3c2e39a54545b0da039cb4bafd9c4e5caa", "bytes": 729574912},
+    {"id": "parakeet-tdt-0.6b-v3", "name": "Parakeet v3", "worker": "transcribe",
+     "url": "https://huggingface.co/handy-computer/parakeet-tdt-0.6b-v3-gguf/resolve/90f082450fcbacdb54e5900c44ef697c9ea59622/parakeet-tdt-0.6b-v3-Q8_0.gguf",
+     "file": "parakeet-tdt-0.6b-v3-Q8_0.gguf", "sha256": "5859f77944efcd8eafa23a6350731960b2b55b2203df51f319665c807d802cc7", "bytes": 739508576},
+    {"id": "canary-1b-flash", "name": "Canary 1B Flash", "worker": "transcribe",
+     "url": "https://huggingface.co/handy-computer/canary-1b-flash-gguf/resolve/bd27c7ef67ca6347ae2f729a130658466beecc85/canary-1b-flash-Q8_0.gguf",
+     "file": "canary-1b-flash-Q8_0.gguf", "sha256": "b23202a996d716c8d90c2c0da708ef72c9d340eda0e90c9e4a4436064de980ea", "bytes": 1048131424},
+    {"id": "qwen3-asr-0.6b", "name": "Qwen3 ASR", "worker": "transcribe",
+     "url": "https://huggingface.co/handy-computer/Qwen3-ASR-0.6B-gguf/resolve/28c66fba077f1359a42b52c55b618a24cdb6e0e7/Qwen3-ASR-0.6B-Q8_0.gguf",
+     "file": "Qwen3-ASR-0.6B-Q8_0.gguf", "sha256": "f081b2d5e23bd669d92cc331d722a8a0681943b8e6f34b48996fd5c319b5acd8", "bytes": 850423456},
+    {"id": "moonshine-streaming-medium", "name": "Moonshine Medium", "worker": "transcribe",
+     "url": "https://huggingface.co/handy-computer/moonshine-streaming-medium-gguf/resolve/0f99e956a9e63d591ddd7f2a20dfead255e96c68/moonshine-streaming-medium-Q8_0.gguf",
+     "file": "moonshine-streaming-medium-Q8_0.gguf", "sha256": "f7c9564249b508f6012927ec4f9e536087da53a7047f858ca9975bea5f75299e", "bytes": 295793568},
+    {"id": "whisper-large-v3-turbo", "name": "Whisper Turbo", "worker": "transcribe",
+     "url": "https://huggingface.co/handy-computer/whisper-large-v3-turbo-gguf/resolve/ceea6c8a94a21ab85be244d311e874a39344dbf5/whisper-large-v3-turbo-Q8_0.gguf",
+     "file": "whisper-large-v3-turbo-Q8_0.gguf", "sha256": "b2e30cc286bc9f3aba4db9099fc7403543497c05ce7100d0d83091ddfd25a183", "bytes": 886381760},
+    {"id": "whisper-small.en", "name": "Whisper Small", "worker": "transcribe",
+     "url": "https://huggingface.co/handy-computer/whisper-small.en-gguf/resolve/465682f43898836b623801603ca6432a41275586/whisper-small.en-Q8_0.gguf",
+     "file": "whisper-small.en-Q8_0.gguf", "sha256": "9614e6b7fda2d26018e4f268aece8ca25a83296ea0b534169a585b740bfd71ef", "bytes": 269674144},
+    {"id": "whisper-base.en", "name": "Whisper Base", "worker": "transcribe",
+     "url": "https://huggingface.co/handy-computer/whisper-base.en-gguf/resolve/f83d8d187299d4fc06e86a6de5084375ceac34bf/whisper-base.en-Q8_0.gguf",
+     "file": "whisper-base.en-Q8_0.gguf", "sha256": "3b46ca40bccbf7609c68d88a36d96077a04ca7c87f2060ede06f129fac3e7652", "bytes": 84886208}
+  ],
+  "datasets": [
+    {"id": "test-clean", "url": "https://www.openslr.org/resources/12/test-clean.tar.gz", "file": "test-clean.tar.gz", "md5_openslr": "32fa31d27d2e1cad72775fee3f4849a9", "licence": "CC BY 4.0"},
+    {"id": "test-other", "url": "https://www.openslr.org/resources/12/test-other.tar.gz", "file": "test-other.tar.gz", "md5_openslr": "fb5a50374b501bb3bac4815ee91d3135", "licence": "CC BY 4.0"}
+  ]
+}
