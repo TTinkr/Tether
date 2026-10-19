@@ -32,6 +32,32 @@ struct FocusedEditorWarmupTests {
         #expect(asks == 1 && reads == 2 && sleeps == 2 && result.attempts == 2)
     }
 
+    /// Build 85 caret trust: only a page or group the browser still reports as focused is pasted
+    /// into without a readable caret; buttons, links and unknown roles are not.
+    @Test func caretTrustCoversOnlyBrowserContainers() {
+        for role in ["AXWebArea", "AXGroup", "AXScrollArea"] { #expect(TargetDelivery.caretTrusted(role: role)) }
+        for role in ["AXButton", "AXLink", "AXRadioButton", "AXUnknown", "AXSecureTextField", ""] {
+            #expect(!TargetDelivery.caretTrusted(role: role))
+        }
+        // A paste into such a container can never be confirmed, so it never becomes a Return.
+        let watch = PasteReadbackWatch.Outcome(reason: "unreadable_selection", observedRead: true)
+        #expect(!watch.insertionNotObserved(role: "AXWebArea", hasSelection: false))
+    }
+
+    /// Build 83: Chromium browsers also get AXEnhancedUserInterface; other apps never do.
+    @Test func onlyChromiumBrowsersGetTheScreenReaderSwitch() {
+        for id in ["com.google.Chrome", "com.google.Chrome.canary", "com.microsoft.edgemac", "com.brave.Browser",
+                   "company.thebrowser.Browser", "org.chromium.Chromium"] {
+            #expect(TargetDelivery.isChromiumBrowser(id))
+        }
+        for id in ["com.apple.Safari", "com.openai.codex", "com.anthropic.claudefordesktop", "com.todesktop.230313mzl4w4u92",
+                   "com.microsoft.VSCode", "com.tinyspeck.slackmacgap", nil] as [String?] {
+            #expect(!TargetDelivery.isChromiumBrowser(id))
+        }
+        // The warm-up must end inside the stop edge's 0.5 s with room for the reads around it (Codex, build 85).
+        #expect(FocusedEditorWarmup.maxAttempts * 50 <= 350)
+    }
+
     @Test func nilFocusAndPersistentContainerHaveABoundedRetryBudget() {
         for initial in [nil, "AXWebArea"] as [String?] {
             var asks = 0, reads = 0, sleeps = 0
@@ -39,7 +65,8 @@ struct FocusedEditorWarmupTests {
                 enable: { asks += 1; return true }, stillCurrent: { true },
                 read: { reads += 1; return initial }, wait: { sleeps += 1 })
             #expect(result.valid && result.element == initial)
-            #expect(asks == 1 && reads == 6 && sleeps == 6 && result.attempts == 6)
+            let n = FocusedEditorWarmup.maxAttempts
+            #expect(asks == 1 && reads == n && sleeps == n && result.attempts == n)
         }
     }
 

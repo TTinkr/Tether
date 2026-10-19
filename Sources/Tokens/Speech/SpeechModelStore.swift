@@ -126,8 +126,14 @@ final class SpeechModelStore: ObservableObject {
         }
         switch OrukeetModelDownload.shared.state {
         case .downloading(let fraction): states[id] = .downloading(fraction)
-        case .ready: states[id] = .ready
-        case .failed(let reason): states[id] = .failed(reason)
+        case .ready:
+            states[id] = .ready
+            // A download the person started is chosen only once verified (Codex review of 86).
+            if let choiceAtStart = orukeetChoiceAtStart {
+                orukeetChoiceAtStart = nil
+                chooseFinished(id, true, choiceAtStart)
+            }
+        case .failed(let reason): states[id] = .failed(reason); orukeetChoiceAtStart = nil
         case .idle: states[id] = OrukeetModelStore.isReady ? .ready : .notDownloaded
         }
     }
@@ -176,16 +182,29 @@ final class SpeechModelStore: ObservableObject {
     // MARK: Actions
 
     /// Starts a download only for a model that is not on this Mac yet, or whose download stopped.
-    func downloadIfMissing(_ id: String) {
+    /// `selectWhenReady`: the person asked for this download, so it becomes the model in use once ready.
+    func downloadIfMissing(_ id: String, selectWhenReady: Bool = false) {
         switch state(for: id) {
-        case .notDownloaded, .failed: download(id)
+        case .notDownloaded, .failed: download(id, selectWhenReady: selectWhenReady)
         default: break
         }
     }
 
-    func download(_ id: String) {
+    /*
+    Every choice made by hand bumps choiceRevision. A finished download is chosen only if no choice
+    was made by hand while it ran: comparing model names was not enough (Codex QA of 86: Apple, then
+    B, then Apple again looked unchanged and the download took over).
+    */
+    nonisolated static func choosesWhenReady(revisionAtStart: Int, revisionNow: Int) -> Bool { revisionAtStart == revisionNow }
+    private(set) var choiceRevision = 0
+
+    func download(_ id: String, selectWhenReady: Bool = false) {
         guard let entry = SpeechModelCatalog.entry(id), Self.runnable(entry), let download = entry.download else { return }
+        let choiceAtStart = choiceRevision
         if id == SpeechModelCatalog.orukeetID {
+            // Chosen when OrukeetModelDownload reports it verified (refreshOrukeet), never before:
+            // a failed or cancelled download leaves the choice alone (Codex review of 86).
+            if selectWhenReady { orukeetChoiceAtStart = choiceAtStart }
             if case .failed = OrukeetModelDownload.shared.state { OrukeetModelDownload.shared.retry() }
             else { OrukeetModelDownload.shared.startIfNeeded() }
             return
@@ -211,6 +230,7 @@ final class SpeechModelStore: ObservableObject {
             if await Task.detached(operation: { Self.verifyInstalled(entry) }).value {
                 if current() {
                     self?.states[id] = .ready
+                    self?.chooseFinished(id, selectWhenReady, choiceAtStart)
                     self?.onReady?(id)
                 }
                 return
@@ -229,7 +249,10 @@ final class SpeechModelStore: ObservableObject {
                 let ok = await Task.detached { Self.verifyInstalled(entry) }.value
                 guard current() else { return }
                 self?.states[id] = ok ? .ready : .failed(OrukeetDownloadFailure.checksum.localizedDescription)
-                if ok { self?.onReady?(id) }
+                if ok {
+                    self?.chooseFinished(id, selectWhenReady, choiceAtStart)
+                    self?.onReady?(id)
+                }
             } catch {
                 // Cancel already put the row back to Download; a stopped transfer is not a failure.
                 guard current() else { return }
@@ -317,10 +340,19 @@ final class SpeechModelStore: ObservableObject {
         }
     }
 
+    /// choiceRevision when the person started an Orukeet download; nil when none is pending.
+    private var orukeetChoiceAtStart: Int?
+
+    /// A download the person started becomes the model in use, unless they chose by hand meanwhile.
+    private func chooseFinished(_ id: String, _ selectWhenReady: Bool, _ choiceAtStart: Int) {
+        guard selectWhenReady, Self.choosesWhenReady(revisionAtStart: choiceAtStart, revisionNow: choiceRevision) else { return }
+        if choose(id, byHand: false) { Diagnostics.event("speech_model_chosen_after_download model=\(id)") }
+    }
+
     /// Saves the choice for the next dictation. Only built-in or ready models in a family this build
     /// can run are accepted.
     @discardableResult
-    func choose(_ id: String) -> Bool {
+    func choose(_ id: String, byHand: Bool = true) -> Bool {
         guard let entry = SpeechModelCatalog.entry(id), Self.runnable(entry) else { return false }
         switch state(for: id) {
         case .builtIn, .ready: break
@@ -331,6 +363,7 @@ final class SpeechModelStore: ObservableObject {
         default: return false
         }
         UserDefaults.standard.set(id, forKey: SpeechEngineChoice.preferenceKey)
+        if byHand { choiceRevision += 1 }
         /*
         The warm worker holds the previous model: replace it now so the next talk is warm. The
         pool's own check swaps an idle worker (or a background load) for a different model, but

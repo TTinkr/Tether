@@ -25,10 +25,10 @@ struct SettingsReliabilityTests {
     @Test func downloadsNeverRefetchWhatIsOnThisMac() throws {
         let store = try source("Speech/SpeechModelStore.swift")
         #expect(store.contains("case .ready, .builtIn, .downloading, .comingSoon: return"))
-        #expect(store.contains("func downloadIfMissing(_ id: String)"))
+        #expect(store.contains("func downloadIfMissing(_ id: String, selectWhenReady: Bool = false)"))
         let settings = try source("Features/Home/TokensHomeSettings.swift")
         // Build 82: the Models tab's Download and Retry both go through downloadIfMissing.
-        #expect(settings.contains("download: { speechModels.downloadIfMissing($0.id) }"))
+        #expect(settings.contains("download: { speechModels.downloadIfMissing($0.id, selectWhenReady: true) }"))
         #expect(try source("Features/Home/TokensModelsPage.swift").contains("Button(\"Retry\") { actions.download(info) }"))
     }
 

@@ -44,13 +44,58 @@ enum TokensOutputOptions {
                                              with: on ? "<\(name)>$1</\(name)>" : "$1",
                                              options: .regularExpression)
         }
+        // No spaces in number tags (UX review): single digits join, <num>1234567</num>; a run
+        // with a longer number joins with commas, <num>9,10,11</num>, so it never reads as 91011.
+        guard numbers else { return text }
+        let spans = try! NSRegularExpression(pattern: #"<num>(.*?)</num>"#)
+        for match in spans.matches(in: text, range: NSRange(text.startIndex..., in: text)).reversed() {
+            guard let inner = Range(match.range(at: 1), in: text) else { continue }
+            let items = text[inner].split(whereSeparator: \.isWhitespace)
+            guard items.count > 1 else { continue }
+            let digits = items.allSatisfy { $0.count == 1 && $0.first!.isNumber }
+            text.replaceSubrange(inner, with: items.joined(separator: digits ? "" : ","))
+        }
         return text
     }
 
     /// `headerNotes` are one-line `> *…*` notes appended to the metadata block (for example
     /// ScreenReferenceSampler.lines). With metadata off they are dropped: raw stays raw.
     static func parts(_ rendered: String, metadata: Bool, headerNotes: [String] = []) -> TokensPromptParts {
-        metadata ? TokensDecoration.parts(rendered, decorated: false, headerNotes: headerNotes)
-            : TokensPromptParts(marker: "", body: rendered, metadata: "")
+        guard metadata else { return TokensPromptParts(marker: "", body: thinkingMarkers(rendered), metadata: "") }
+        let full = TokensDecoration.parts(rendered, decorated: false, headerNotes: headerNotes)
+        let words = full.body.trimmingCharacters(in: .whitespacesAndNewlines)
+        return TokensPromptParts(marker: "", body: thinkingMarkers(words) + footer(full.metadata, body: words), metadata: "")
+    }
+
+    /// Pause notes are delivered as plain "[thinking 5.24s]" (UX review). Only this delivery
+    /// edge changes them; history readers and the envelope still see the internal "*[pause 5.2400]*".
+    static func thinkingMarkers(_ text: String) -> String {
+        let range = NSRange(text.startIndex..., in: text)
+        var out = text
+        for match in pauseMarker.matches(in: text, range: range).reversed() {
+            guard let whole = Range(match.range, in: out), let number = Range(match.range(at: 1), in: text),
+                  let seconds = Double(text[number]) else { continue }
+            out.replaceSubrange(whole, with: String(format: "[thinking %.2fs]", seconds))
+        }
+        return out
+    }
+
+    private static let pauseMarker = try! NSRegularExpression(pattern: #"\*\[pause (\d+\.\d+)\]\*"#)
+    private static let stats = try! NSRegularExpression(pattern: #"> \*(\d+(?:\.\d+)?)s · (\d+) words? · (\d+) wpm"#)
+
+    /*
+    Metadata stays chill (UX review): no "# π" heading and no "# Metadata" section.
+    The footer is the last line, "— π [253 wpm, 19.42s, 412 characters]" (its own line, 2026-10-18).
+    One paste, like metadata off, so the editor can read it back and Auto-send still works.
+    Characters are the words without pause notes. With no receipt line, nothing is added.
+    */
+    static func footer(_ metadata: String, body: String) -> String {
+        let range = NSRange(metadata.startIndex..., in: metadata)
+        guard let match = stats.firstMatch(in: metadata, range: range) else { return "" }
+        func group(_ i: Int) -> String? { Range(match.range(at: i), in: metadata).map { String(metadata[$0]) } }
+        guard let seconds = group(1).flatMap(Double.init), let wpm = group(3) else { return "" }
+        let characters = ThinkingComposer.removingAnnotations(body)
+            .split(whereSeparator: \.isWhitespace).joined(separator: " ").count
+        return "\n— π [\(wpm) wpm, \(String(format: "%.2fs", seconds)), \(characters) \(characters == 1 ? "character" : "characters")]"
     }
 }

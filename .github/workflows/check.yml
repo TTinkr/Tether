@@ -26,7 +26,7 @@ jobs:
       - name: Package private Parakeet preview
         if: github.event_name == 'push' && github.event.repository.private
         run: |
-          python3 scripts/package_app.py --mode preview --build-number 82 --resources-dir Resources/Release --transcribe-worker "$RUNNER_TEMP/transcribe-stage"
+          python3 scripts/package_app.py --mode preview --version 0.3.60 --build-number 87 --resources-dir Resources/Release --transcribe-worker "$RUNNER_TEMP/transcribe-stage"
           python3 - <<'PYCODE'
           import pathlib, subprocess
           app, = pathlib.Path("dist").glob("*/Tokens Community.app")

@@ -27,6 +27,16 @@ struct BubblePresetTests {
             #expect(defaults.array(forKey: SettingsKey.bubbleCustomPosition) != nil)
         }
     }
+    @Test func publicDefaultIsEstablishedOnceWithoutReplacingAStoredEdge() throws {
+        let name = "preset-default-tests-\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: name))
+        defer { defaults.removePersistentDomain(forName: name) }
+        #expect(BubblePlacement.loadPreset(defaultingTo: .right, from: defaults) == .right)
+        #expect(defaults.string(forKey: SettingsKey.bubblePlacement) == "right")
+        #expect(BubblePlacement.loadPreset(from: defaults) == .right)
+        BubblePlacement.save(.left, to: defaults)
+        #expect(BubblePlacement.loadPreset(defaultingTo: .right, from: defaults) == .left)
+    }
     @Test func presetsFitOffsetDisplayWithExpectedOrientation() {
         let visible = CGRect(x: -1600, y: 80, width: 1440, height: 850)
         for preset in BubblePlacement.presets {

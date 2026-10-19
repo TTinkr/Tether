@@ -410,11 +410,9 @@ enum PasteAckHistory {
         // generic history, and also enables the speculative early-prefix path.
         guard !finalRevealBundles.contains(bundle) else { return false }
         /*
-        A rich composer needs one verified paste into a rich composer of this app, not just any
-        field of it (build 81): a verified plain <textarea> or search box in Chrome used to arm
-        piecewise reveal for ChatGPT, Claude.ai or Gmail composers, which could not acknowledge
-        the pieces and ended as "Partial text inserted". Unfamiliar editors never risk a partial
-        insertion on their first dictation.
+        Browser fields share app-wide history but not paste semantics. Use one final paste
+        for every browser field, including address bars and ordinary inputs; bundle-level
+        calibration must not authorize an early prefix or multiple writes.
         */
         /*
         Browsers fail closed for rich composers: every site shares one
@@ -422,7 +420,7 @@ enum PasteAckHistory {
         the stop prefix. Tokens never reads page URLs, so there is no private, stable per-site
         key: browser composers always take one full paste.
         */
-        if richComposer, browserBundles.contains(bundle) { return false }
+        guard !requiresSingleFinalPaste(bundle: bundle) else { return false }
         let richCount = (defaults.dictionary(forKey: preferenceKey) as? [String: Int])?[richKey(bundle)] ?? 0
         return richComposer ? richCount >= 1 : trusts(bundle: bundle, in: defaults)
     }
@@ -495,10 +493,17 @@ enum PasteAckHistory {
         let history = allowsStaging(bundle: bundle, richComposer: richComposer, in: defaults)
         let finalReveal = allowsCodexFinalReveal(bundle: bundle, richComposer: richComposer,
             exactPlan: exactPlan, continuation: continuation, build: build, in: defaults)
-        return (history, finalReveal, threeSteps && stageable && (boundaryTrial || history || finalReveal))
+        // Apply the browser policy outside every opt-in, including a diagnostic trial.
+        let multipleWrites = !requiresSingleFinalPaste(bundle: bundle)
+        return (history, finalReveal, multipleWrites && threeSteps && stageable && (boundaryTrial || history || finalReveal))
     }
 
-    /// Web browsers: one bundle, many sites (rich composers there never stage).
+    /// Browser fields share app-wide history but do not share paste semantics.
+    static func requiresSingleFinalPaste(bundle: String?) -> Bool {
+        bundle.map { browserBundles.contains($0) } ?? false
+    }
+
+    /// Web browsers: one bundle, many sites and native controls (including the omnibox).
     static let browserBundles: Set<String> = [
         "com.google.Chrome", "com.google.Chrome.beta", "com.google.Chrome.dev", "com.google.Chrome.canary",
         "org.chromium.Chromium", "com.apple.Safari", "com.apple.SafariTechnologyPreview",

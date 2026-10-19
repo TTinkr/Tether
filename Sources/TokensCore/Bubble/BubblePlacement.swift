@@ -36,6 +36,18 @@ public enum BubblePlacement: String, CaseIterable, Sendable {
         return migrated
     }
 
+    /// Establishes a product default once, without replacing any valid saved edge.
+    /// Public Tokens uses `.right`; callers that do not opt in retain the historical bottom default.
+    public static func loadPreset(defaultingTo defaultPlacement: Self,
+                                  from defaults: UserDefaults = .standard) -> Self {
+        guard defaults.object(forKey: SettingsKey.bubblePlacement) == nil else {
+            return loadPreset(from: defaults)
+        }
+        let preset = presets.contains(defaultPlacement) ? defaultPlacement : .bottom
+        save(preset, to: defaults)
+        return preset
+    }
+
     /// The saved placement, plus the dragged position when the placement is `custom`.
     ///
     /// The dragged position is a fraction (0…1) of the room the bubble can move in, so it

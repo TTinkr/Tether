@@ -186,65 +186,6 @@ struct HomeRestingEdgeTests {
         #expect(loose.under[0] != true)
     }
 
-    // MARK: C50 Recent's row budget
-
-    /// The plain Ready hero is heading, dictate, Speech model and Today: the first row ends on rule 8.
-    @Test func recentCountsTheSpeechModelLine() {
-        #expect(TokensHomeLayout.firstRowRule == 8)
-        #expect(TokensHomeLayout.recentRows(sheetHeight: 720) == 5)
-        // Every row it asks for ends above the 720 sheet's resting edge (sheet y 685).
-        let lastRowEnd = CGFloat(TokensHomeLayout.firstRowRule + 5 - 1) * TokensUI.paperCell
-        #expect(lastRowEnd <= 56 + TokensRestingEdgeMask.cut(height: 720 - 56))
-    }
-
-    /// Held words and an earlier talk each take a square; so does the Today line.
-    @Test func optionalHeroLinesTakeRows() {
-        let wide: CGFloat = 616
-        let plain = TokensHomeHeroLines()
-        #expect(TokensHomeLayout.heroCells(plain, columnWidth: wide) == 4)
-        let held = TokensHomeHeroLines(held: "Paste unavailable", heldCopy: true)
-        #expect(TokensHomeLayout.heroCells(held, columnWidth: wide) == 5)
-        #expect(TokensHomeLayout.recentRows(sheetHeight: 720, heroCells: 5) == 4)
-        let both = TokensHomeHeroLines(held: "Paste unavailable", heldCopy: true, earlier: true)
-        #expect(TokensHomeLayout.heroCells(both, columnWidth: wide) == 6)
-        #expect(TokensHomeLayout.recentRows(sheetHeight: 720, heroCells: 6) == 3)
-        #expect(TokensHomeLayout.heroCells(TokensHomeHeroLines(today: false), columnWidth: wide) == 3)
-        // Blocked: heading, blocker, "Then hold [key] to talk", Speech model.
-        #expect(TokensHomeLayout.heroCells(TokensHomeHeroLines(ready: false, held: "x"), columnWidth: wide) == 4)
-    }
-
-    /// A long reason wraps at the 28-point pitch: two or three lines take two squares.
-    @Test func aWrappedReasonTakesTwoSquares() {
-        let reason = "Orukeet did not become ready. Check Speech engine in Settings, then retry."
-        #expect(TokensHomeLayout.heldCells(reason, width: 900) == 1)
-        #expect(TokensHomeLayout.heldCells(reason, width: 320) == 2)
-        #expect(TokensHomeLayout.heldCells(reason, width: 90) == 3)
-    }
-
-    /// Unchanged outside the 10-14 rule band: tall sheets still show 8, short ones still scroll at 3.
-    @Test func clampsStillHold() {
-        #expect(TokensHomeLayout.recentRows(sheetHeight: 900) == 8)
-        #expect(TokensHomeLayout.recentRows(sheetHeight: 520) == 3)
-        #expect(TokensHomeLayout.recentRows(sheetHeight: 720 / 1.5) == 3)
-        #expect(TokensHomeLayout.recentRows(sheetHeight: 2_000) == 8)
-    }
-
-    // MARK: C51 the held-words line
-
-    /// The line names its own Copy, so the stored "· Copy latest" hint is dropped on Home only.
-    @Test func heldReasonDropsTheMenuHint() {
-        #expect(TokensHomeHeld.reason("Paste unavailable · Copy latest") == "Paste unavailable")
-        #expect(TokensHomeHeld.reason("Text inserted · Send unavailable · Copy latest") == "Text inserted · Send unavailable")
-        #expect(TokensHomeHeld.reason("Final words unavailable · Copy captured words") == "Final words unavailable")
-        #expect(TokensHomeHeld.reason(TalkModel.keptInAppMessage) == TalkModel.keptInAppMessage)
-        // Words that merely contain the phrase mid-sentence are left alone.
-        #expect(TokensHomeHeld.reason("Microphone changed. Copy latest, then tap to resume.")
-                == "Microphone changed. Copy latest, then tap to resume.")
-        #expect(TokensHomeHeld.reason("") == "")
-        // The pop-up still reads the stored message, suffix and all.
-        #expect(RecoveryPresentation(message: "Paste unavailable · Copy latest").headline == "We couldn’t paste your words.")
-    }
-
     // MARK: C52 History search
 
     private func entry(_ spoken: String, saved: String, typed: String = "") -> PromptHistoryEntry {

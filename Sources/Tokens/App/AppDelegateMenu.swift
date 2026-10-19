@@ -38,7 +38,7 @@ extension AppDelegate {
         reference.state  = ScreenReferenceSampler.isEnabled ? .on : .off
         menu.addItem(reference)
         // Default off: agent names are corrected only after the person asks (AgentNameFixes).
-        let agentNames = NSMenuItem(title: "Fix Agent Names (Claude Code, Codex, Sol)",
+        let agentNames = NSMenuItem(title: "Fix Agent Names (Claude Code, Codex)",
                                     action: #selector(statusToggleAgentNameFixes(_:)), keyEquivalent: "")
         agentNames.target = self
         agentNames.state  = AgentNameFixes.isEnabled ? .on : .off

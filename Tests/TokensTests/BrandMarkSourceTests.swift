@@ -10,7 +10,6 @@ anything new fails here instead of shipping.
 struct BrandMarkSourceTests {
     static let legacy: Set<String> = [
         "Features/LiveNotes/LiveNotes.swift",
-        "Features/ThinkingPanel/ThinkingPanelView.swift",
     ]
 
     @Test func noTypedPiOutsideLegacySurfaces() throws {

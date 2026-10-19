@@ -252,7 +252,7 @@ enum TokensHistoryText {
         if let end = body.range(of: "\n---") { body = String(body[..<end.lowerBound]) }
         return ThinkingComposer.removingAnnotations(body).components(separatedBy: .newlines)
             .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty && !$0.hasPrefix("# ") && !$0.hasPrefix(">") }
+            .filter { !$0.isEmpty && !$0.hasPrefix("# ") && !$0.hasPrefix(">") && !$0.hasPrefix("— π (") }
             .joined(separator: " ")
     }
 

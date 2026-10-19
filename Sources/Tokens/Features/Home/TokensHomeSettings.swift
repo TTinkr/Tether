@@ -70,12 +70,20 @@ extension TokensHome {
                             .accessibilityIdentifier("tokens.auto-send")
                     }
                     TokensSettingsRow(title: "Show where words land",
-                                      caption: "A small π marks the paste spot while you talk.") {
+                                      caption: "Dotted corners and a small π mark the text box your words go into.") {
                         Toggle(isOn: $showPasteMarker) { EmptyView() }
                             .toggleStyle(TokensSwitchStyle())
                             .accessibilityLabel("Show where words land")
                             .accessibilityValue(showPasteMarker ? "On" : "Off")
                             .accessibilityIdentifier("tokens.settings.paste-marker")
+                    }
+                    TokensSettingsRow(title: "Show a ring at the pointer",
+                                      caption: "A dotted circle follows your pointer when no text box is ready.") {
+                        Toggle(isOn: $showCursorRing) { EmptyView() }
+                            .toggleStyle(TokensSwitchStyle())
+                            .accessibilityLabel("Show a ring at the pointer")
+                            .accessibilityValue(showCursorRing ? "On" : "Off")
+                            .accessibilityIdentifier("tokens.settings.cursor-ring")
                     }
                 }
                 TokensRuleSpacer(cells: 1)
@@ -234,9 +242,7 @@ extension TokensHome {
 //
     /*
     The Models tab (build 82; before, Settings › Speech engine › Change…). This adapter says where
-    each model stands on this Mac and what each row's action does. Download only downloads: once
-    the model is verified its row says Use (downloads never switch by
-    themselves).
+    each model stands on this Mac and what each row's action does. A verified download selects that model unless the user chose another while it ran.
     */
     var modelsPage: some View {
         let talking = model.phase == .capturing || model.phase == .finalizing
@@ -245,7 +251,7 @@ extension TokensHome {
                              availability: speechModelAvailability,
                              actions: SpeechModelActions(
                                 use: chooseSpeechModel,
-                                download: { speechModels.downloadIfMissing($0.id) },
+                                download: { speechModels.downloadIfMissing($0.id, selectWhenReady: true) },
                                 cancel: { speechModels.cancel($0.id) },
                                 remove: { speechModels.remove($0.id) }),
                              talking: talking)

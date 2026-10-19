@@ -102,7 +102,7 @@ struct DestinationCaretSafetyTests {
         let application = NotificationCenter()
         let monitor = DestinationPreviewInvalidation(workspace: workspace, application: application)
         var hides = 0
-        monitor.start { hides += 1 }
+        monitor.start { _ in hides += 1 }
         defer { monitor.stop() }
         for (center, name) in [
             (workspace, NSWorkspace.didActivateApplicationNotification),
@@ -118,10 +118,29 @@ struct DestinationCaretSafetyTests {
         #expect(hides == 4)
     }
 
+    /// Build 83: typing in the verified box is soft (the box stays); everything else is hard.
+    @Test func onlyEditsInsideTheBoxAreSoft() {
+        for name in [kAXValueChangedNotification, kAXSelectedTextChangedNotification, kAXLayoutChangedNotification] {
+            #expect(DestinationPreviewInvalidation.isSoft(name))
+        }
+        for name in [kAXFocusedUIElementChangedNotification, kAXFocusedWindowChangedNotification,
+                     kAXWindowMovedNotification, kAXWindowResizedNotification, kAXWindowMiniaturizedNotification,
+                     kAXUIElementDestroyedNotification] {
+            #expect(!DestinationPreviewInvalidation.isSoft(name))
+        }
+        let monitor = DestinationPreviewInvalidation(workspace: NotificationCenter(), application: NotificationCenter())
+        var kinds: [Bool] = []
+        monitor.start { kinds.append($0) }
+        defer { monitor.stop() }
+        monitor.invalidate(soft: true)
+        monitor.invalidate()
+        #expect(kinds == [true, false])
+    }
+
     @Test func focusAndWindowCallbacksInvalidateSamePIDResultsAndCannotResurrectAfterStop() {
         let monitor = DestinationPreviewInvalidation(workspace: NotificationCenter(), application: NotificationCenter())
         var hides = 0
-        monitor.start { hides += 1 }
+        monitor.start { _ in hides += 1 }
         let beforeFocus = monitor.revision
         monitor.invalidate() // Same callback entry used by focused element/window/selection/move notifications.
         #expect(hides == 1)
@@ -131,7 +150,7 @@ struct DestinationCaretSafetyTests {
         monitor.stop()
         monitor.invalidate() // A queued AX callback from the retired observer does nothing.
         #expect(hides == 1)
-        monitor.start { hides += 1 }
+        monitor.start { _ in hides += 1 }
         #expect(!DestinationPreview.fresh(requestedAt: 10, now: 10.1,
             revision: oldTalk, currentRevision: monitor.revision, sameApplication: true))
         monitor.stop()

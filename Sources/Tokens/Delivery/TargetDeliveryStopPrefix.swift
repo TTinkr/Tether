@@ -17,6 +17,12 @@ extension TargetDelivery {
                                 isCurrent: @escaping () -> Bool,
                                 completion: @escaping (StopPrefixResult) -> Void) {
         precondition(Thread.isMainThread)
+        // Refuse before any AX read or clipboard work, even when old browser history
+        // says a plain field was calibrated. The complete final payload owns that paste.
+        guard !PasteAckHistory.requiresSingleFinalPaste(bundle: target.application.bundleIdentifier) else {
+            completion(.skipped)
+            return
+        }
         /*
         One Accessibility wait budget for this prefix, from the first lease check to the last
         scheduled readback: the readback polls run later on the main queue, so each one binds the

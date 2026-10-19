@@ -9,6 +9,13 @@ enum PasteMarkerPreference {
     static func save(_ value: Bool, _ defaults: UserDefaults = .standard) { defaults.set(value, forKey: key) }
 }
 
+/// The dotted ring at the pointer when no text box is verified: its own switch, on by default
+enum PasteCursorRingPreference {
+    static let key = "TokensPasteCursorRing.v1"
+    static func load(_ defaults: UserDefaults = .standard) -> Bool { defaults.object(forKey: key) as? Bool ?? true }
+    static func save(_ value: Bool, _ defaults: UserDefaults = .standard) { defaults.set(value, forKey: key) }
+}
+
 /// Where the marker goes, in AppKit screen coordinates (origin bottom-left).
 enum PasteMarkerGeometry {
     static let gap: CGFloat = 4
@@ -257,11 +264,17 @@ struct PasteMarkerView: View {
     let shortcutName: String
     /// False for the caret fallback: the label alone.
     var framed = true
+    var cursorFallback = false
     /// The π's style; only comparison renders pass another.
     var pi: PasteMarkerPiStyle = PasteMarkerLabel.piStyle
 
     var body: some View {
-        if framed {
+        if cursorFallback {
+            Circle()
+                .stroke(cueInk, style: StrokeStyle(lineWidth: 2.4, lineCap: .round, dash: [0.01, 4.2]))
+                .padding(3)
+                .accessibilityLabel("Choose a text field")
+        } else if framed {
             CornerCues()
                 .stroke(cueInk, style: StrokeStyle(lineWidth: 2.2, lineCap: .round, dash: [0.01, 3.4]))
                 .padding(EdgeInsets(top: PasteMarkerGeometry.margin.height, leading: PasteMarkerGeometry.margin.width,
@@ -282,10 +295,31 @@ struct PasteMarkerView: View {
 /// One click-through panel, shown and moved only from the destination preview (main thread).
 final class PasteMarker {
     static let shared = PasteMarker()
+    /// dictating is off"). TalkModel sets this on every phase change; the corners keep standby.
+    static var ringWhileTalking = false
+    private let cursorFrame: () -> CGRect?
+    private let enabled: () -> Bool
+    private let recordEvent: (String) -> Void
+
+    init(panel: NSPanel? = nil,
+         cursorFrame: @escaping () -> CGRect? = {
+             DestinationCursorGeometry.frame(at: NSEvent.mouseLocation, screens: NSScreen.screens.map(\.frame))
+         }, enabled: @escaping () -> Bool = { PasteCursorRingPreference.load() && PasteMarker.ringWhileTalking },
+         recordEvent: @escaping (String) -> Void = { Diagnostics.event($0) }) {
+        self.panel = panel
+        self.cursorFrame = cursorFrame
+        self.enabled = enabled
+        self.recordEvent = recordEvent
+    }
     private var panel: NSPanel?
     private var hosting: NSHostingView<PasteMarkerView>?
     private var lastFrame: CGRect?
     private var lastNote: String?
+    private var lastPresentation: String?
+    private var cursorTimer: Timer?
+    private var cursorMonitors: [Any] = []
+    private var expiry: DispatchWorkItem?
+    private(set) var mode: DestinationCueMode = .hidden
     /// Marker lines this talk; a flickering marker logs its first few changes, not hundreds.
     private var notesThisTalk = 0
     static let notesPerTalk = 24
@@ -293,6 +327,8 @@ final class PasteMarker {
     /// `field` and `caret` are Accessibility rectangles; the box wins, the caret is the fallback.
     /// `role` is the box's AX role, for the diagnostic line only (never any text).
     func show(field: CGRect?, caret: CGRect?, shortcutName: String, role: String? = nil) {
+        stopCursorTracking()
+        expiry?.cancel()
         let panel = self.panel ?? makePanel()
         let primaryHeight = NSScreen.screens.first?.frame.maxY ?? 0
         let visible = NSScreen.screens.map(\.visibleFrame)
@@ -316,21 +352,35 @@ final class PasteMarker {
         }
         guard let target else {
             note("paste_marker_skipped reason=\(reason) caret=\(caret != nil) role=\(role ?? "-")")
-            hide(); return
+            showCursor(); return
         }
+        mode = framed ? .field : .caret
+        let expiry = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            if self.enabled() { self.showCursor() } else { self.hide() }
+        }
+        self.expiry = expiry
+        DispatchQueue.main.asyncAfter(deadline: .now() + DestinationPreviewPolicy.cueLifetime, execute: expiry)
         if PasteMarkerGeometry.shouldMove(from: lastFrame, to: target) {
             panel.setFrame(target, display: true)
             lastFrame = target
         }
         // Once per distinct outcome per talk, not once per poll; the size shows how big it drew.
         note("paste_marker_shown framed=\(framed) reason=\(reason) role=\(role ?? "-") cue=\(Int(target.width))x\(Int(target.height))")
-        guard !panel.isVisible else { return }
+        guard !panel.isVisible else {
+            // Ordered is not necessarily on the user's Space (build87 live diagnostics).
+            if !panel.isOnActiveSpace { panel.orderFrontRegardless() }
+            notePresentation()
+            return
+        }
         let reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         panel.alphaValue = reduceMotion ? 1 : 0
         panel.orderFrontRegardless()
         if !reduceMotion {
-            NSAnimationContext.runAnimationGroup { $0.duration = 0.14; panel.animator().alphaValue = 1 }
+            NSAnimationContext.runAnimationGroup({ $0.duration = 0.14; panel.animator().alphaValue = 1 },
+                                                completionHandler: { [weak self] in self?.notePresentation() })
         }
+        notePresentation()
     }
 
     /*
@@ -349,11 +399,21 @@ final class PasteMarker {
         guard line != lastNote, notesThisTalk < Self.notesPerTalk else { return }
         lastNote = line
         notesThisTalk += 1
-        Diagnostics.event(line)
+        recordEvent(line)
+    }
+
+    /// Window observations supplement a requested target; neither proves pixels were seen.
+    /// No field text, pointer coordinates or window titles enter this bounded diagnostic.
+    private func notePresentation() {
+        guard let panel else { return }
+        let state = "mode=\(mode) ordered=\(panel.isVisible) alpha=\(Int((panel.alphaValue * 100).rounded())) active_space=\(panel.isOnActiveSpace) occluded=\(!panel.occlusionState.contains(.visible)) content_hidden=\(panel.contentView?.isHidden ?? true)"
+        guard state != lastPresentation else { return }
+        lastPresentation = state
+        note("paste_cue_window \(state)")
     }
 
     /// A new talk logs its outcomes afresh.
-    func resetDiagnostics() { lastNote = nil; notesThisTalk = 0 }
+    func resetDiagnostics() { lastNote = nil; lastPresentation = nil; notesThisTalk = 0 }
 
     /// Whether the marker is on screen now (the destination preview keeps it through a blip).
     var isShowing: Bool { panel?.isVisible == true }
@@ -364,10 +424,74 @@ final class PasteMarker {
     and the next show logs again.
     */
     func hide(reason: String? = nil) {
+        expiry?.cancel(); expiry = nil
+        stopCursorTracking()
+        mode = .hidden
         lastFrame = nil
-        guard let panel, panel.isVisible else { return }
+        guard let panel, panel.isVisible else { notePresentation(); return }
         if let reason { note("paste_marker_hidden reason=\(reason)") }
         panel.orderOut(nil)
+        notePresentation()
+    }
+
+    /// Uses the same click-through panel as the target cue, so two indicators cannot overlap.
+    /// This is only a request to choose a destination, never a delivery acknowledgement.
+    func showCursor() {
+        expiry?.cancel(); expiry = nil
+        guard enabled() else { hide(); return }
+        if panel == nil { _ = makePanel() }
+        let changed = mode != .cursor
+        mode = .cursor
+        if changed { hosting?.rootView = PasteMarkerView(shortcutName: "", framed: false, cursorFallback: true) }
+        refreshCursorPlacement()
+        /*
+        The ring moves on every mouse event, wherever the pointer is (UX review: a 30 Hz
+        timer looked glitchy when the mouse moved fast). Global covers other apps, local covers
+        Tokens' own windows. A slow timer only re-checks the switch and catches a pointer moved
+        without events (a display change, a warp).
+        */
+        if cursorMonitors.isEmpty {
+            let kinds: NSEvent.EventTypeMask = [.mouseMoved, .leftMouseDragged, .rightMouseDragged, .otherMouseDragged]
+            if let global = NSEvent.addGlobalMonitorForEvents(matching: kinds, handler: { [weak self] _ in
+                self?.refreshCursorPlacement()
+            }) { cursorMonitors.append(global) }
+            if let local = NSEvent.addLocalMonitorForEvents(matching: kinds, handler: { [weak self] event in
+                self?.refreshCursorPlacement(); return event
+            }) { cursorMonitors.append(local) }
+        }
+        if cursorTimer == nil {
+            let timer = Timer(timeInterval: 0.25, repeats: true) { [weak self] _ in
+                guard let self else { return }
+                guard self.enabled() else { self.hide(); return }
+                self.refreshCursorPlacement()
+            }
+            cursorTimer = timer
+            RunLoop.main.add(timer, forMode: .common)
+        }
+    }
+
+    private func stopCursorTracking() {
+        cursorTimer?.invalidate(); cursorTimer = nil
+        cursorMonitors.forEach(NSEvent.removeMonitor)
+        cursorMonitors.removeAll()
+    }
+
+    func refreshCursorPlacement() {
+        guard mode == .cursor, let panel else { return }
+        guard let frame = cursorFrame() else {
+            if panel.isVisible { panel.orderOut(nil) }
+            lastFrame = nil
+            notePresentation()
+            return
+        }
+        if lastFrame != frame {
+            // Same size every time: moving the origin alone skips a relayout per event.
+            if lastFrame?.size == frame.size { panel.setFrameOrigin(frame.origin) } else { panel.setFrame(frame, display: true) }
+            lastFrame = frame
+        }
+        panel.alphaValue = 1
+        if !panel.isVisible || !panel.isOnActiveSpace { panel.orderFrontRegardless() }
+        notePresentation()
     }
 
     private func makePanel() -> NSPanel {
@@ -381,7 +505,10 @@ final class PasteMarker {
         panel.ignoresMouseEvents = true
         panel.hidesOnDeactivate = false
         panel.isReleasedWhenClosed = false
-        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
+        // Spaces membership alone does not join another application's full-screen set.
+        // This is a cross-app overlay, not an auxiliary window belonging only to Tokens.
+        panel.collectionBehavior = [.canJoinAllSpaces, .canJoinAllApplications,
+                                    .fullScreenAuxiliary, .stationary, .ignoresCycle]
         // Hide Others (⌥⌘H) in the app being talked into must not hide where its words land.
         panel.canHide = false
         let hosting = NSHostingView(rootView: PasteMarkerView(shortcutName: ""))
@@ -391,5 +518,20 @@ final class PasteMarker {
         self.hosting = hosting
         self.panel = panel
         return panel
+    }
+}
+
+/// Target field/caret are one semantic mode; cursor is the mutually exclusive no-target mode.
+enum DestinationCueMode: Equatable { case hidden, field, caret, cursor }
+
+enum DestinationCursorGeometry {
+    static let diameter: CGFloat = 30
+    static func frame(at point: CGPoint, screens: [CGRect]) -> CGRect? {
+        guard point.x.isFinite, point.y.isFinite,
+              let screen = screens.first(where: { $0.contains(point) }),
+              screen.width >= diameter, screen.height >= diameter else { return nil }
+        return CGRect(x: min(max(point.x - diameter / 2, screen.minX), screen.maxX - diameter),
+                      y: min(max(point.y - diameter / 2, screen.minY), screen.maxY - diameter),
+                      width: diameter, height: diameter)
     }
 }

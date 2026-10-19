@@ -130,11 +130,10 @@ extension TalkModel {
         Diagnostics.event("thinking_placement pauses=\(pauses.count) unplaced=\(placement.unplaced.count) timed_words=\(segment.timedWords.filter(\.hasTiming).count) anchors=\(segment.thinkingAnchors.updates.count) aligned=\(placement.wordTimesAligned) by_word_times=\(placement.placedByWordTimes) by_arrival=\(placement.placedByArrival)")
         return ThinkingPrompt.format(
             /*
-            The 4b reflection read the most; then the live workspace; then the tiny model; then the
-            speaker's own repeated words. Each is re-checked against the final words.
+            The live workspace first; then the tiny model; then the speaker's own repeated words.
+            Each is re-checked against the final words.
             */
-            title: titleOverride ?? ThinkingTitle.best([temple.stream.title(coveringFinalTranscript: characterTalk.deliveryText),
-                                          pauseAsides.latestWorkspaceTitle, thinkingFormatter.title],
+            title: titleOverride ?? ThinkingTitle.best([pauseAsides.latestWorkspaceTitle, thinkingFormatter.title],
                                          transcript: characterTalk.deliveryText)
                 ?? ThinkingTitle.keywords(transcript: characterTalk.deliveryText),
             body: body, durationSeconds: durationSeconds,

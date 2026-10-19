@@ -113,6 +113,7 @@ extension TalkModel {
     /// products restore the user's own spot.
     func showSurface(on screenFrame: NSRect? = nil) {
         surfaceHeldInApp = false
+        if bubbleStandbyOverride { bubbleStandbyOverride = false }
         guard let window = compactWindow() else {
             print("TTT_EVENT surface_missing windows=\(NSApp.windows.count)")
             return
@@ -144,6 +145,16 @@ extension TalkModel {
 
     func hideSurface() {
         surfaceHeldInApp = false
+        if PersistentBubblePolicy.convertsFailedDismissalToStandby(
+            persistentPreviewEnabled: persistentDestinationPreviewEnabled, phase: phase) {
+            bubbleStandbyOverride = true
+            if destinationPreviewSuspended {
+                compactWindow()?.dismissRequested()
+            } else {
+                compactWindow()?.presentRequested()
+            }
+            return
+        }
         compactWindow()?.dismissRequested()
     }
 

@@ -156,17 +156,58 @@ struct RichComposerStagingTests {
         #expect(!PasteAckHistory.allowsStaging(bundle: slack, richComposer: false, in: defaults))
     }
 
-    /// TOK-QA-009: one site's verified composer can never arm another site's in the same browser,
-    /// so browser rich composers (and the stop prefix) always take one full paste.
-    @Test func browserRichComposersFailClosed() {
-        let suite = "browser-rich-\(UUID().uuidString)"
+    /// Build 83: existing plain-field calibration must not enable a browser omnibox,
+    /// another input or another site's rich composer to receive a speculative prefix.
+    @Test func browserFieldsKeepOneCompletePasteAfterPlainOrRichCalibration() {
+        let suite = "browser-single-final-\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suite)!
         defer { defaults.removePersistentDomain(forName: suite) }
-        for browser in ["com.google.Chrome", "com.apple.Safari", "company.thebrowser.Browser"] {
-            for _ in 0..<3 { PasteAckHistory.record(bundle: browser, acknowledged: true, richComposer: true, in: defaults) }
-            #expect(!PasteAckHistory.allowsStaging(bundle: browser, richComposer: true, in: defaults))
-            // Plain browser fields keep their one-paste calibration.
-            #expect(PasteAckHistory.allowsStaging(bundle: browser, richComposer: false, in: defaults))
+        for browser in PasteAckHistory.browserBundles {
+            for calibratedRich in [false, true] {
+                for _ in 0..<3 {
+                    PasteAckHistory.record(bundle: browser, acknowledged: true,
+                                           richComposer: calibratedRich, in: defaults)
+                }
+                #expect(PasteAckHistory.trusts(bundle: browser, in: defaults))
+                #expect(PasteAckHistory.requiresSingleFinalPaste(bundle: browser))
+                for focusedRich in [false, true] {
+                    // This is also the gate checked by the stop-prefix transport.
+                    #expect(!PasteAckHistory.allowsStaging(bundle: browser, richComposer: focusedRich, in: defaults))
+                    for continuation in [false, true] {
+                        for trial in [false, true] {
+                            let eligibility = PasteAckHistory.deliveryStagingEligibility(bundle: browser,
+                                richComposer: focusedRich, exactPlan: true, continuation: continuation,
+                                threeSteps: true, stageable: true, boundaryTrial: trial, in: defaults)
+                            #expect(!eligibility.historyAllows)
+                            #expect(!eligibility.finalRevealAllows)
+                            #expect(!eligibility.mayStage)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Test func browserCannotBypassSinglePasteThroughDirectInsertionOrEarlyPrefix() {
+        let suite = "browser-prefix-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        for browser in PasteAckHistory.browserBundles {
+            PasteAckHistory.record(bundle: browser, acknowledged: true, in: defaults)
+            // The public early-prefix entry point refuses this before AX/clipboard work;
+            // the inner lease guard independently declines through allowsStaging.
+            #expect(PasteAckHistory.requiresSingleFinalPaste(bundle: browser))
+            #expect(!PasteAckHistory.allowsStaging(bundle: browser, richComposer: false, in: defaults))
+            #expect(!StagedPrompt.allowsDirectInsertion(bundleIdentifier: browser))
+        }
+        // Preserve native editor opt-in and the native Codex/Claude prefix safeguards.
+        PasteAckHistory.record(bundle: "com.apple.TextEdit", acknowledged: true, in: defaults)
+        #expect(!PasteAckHistory.requiresSingleFinalPaste(bundle: "com.apple.TextEdit"))
+        #expect(PasteAckHistory.allowsStaging(bundle: "com.apple.TextEdit", richComposer: false, in: defaults))
+        for native in PasteAckHistory.finalRevealBundles {
+            PasteAckHistory.record(bundle: native, acknowledged: true, richComposer: true, in: defaults)
+            #expect(!PasteAckHistory.requiresSingleFinalPaste(bundle: native))
+            #expect(!PasteAckHistory.allowsStaging(bundle: native, richComposer: true, in: defaults))
         }
     }
 
@@ -330,7 +371,7 @@ struct RichComposerStagingTests {
         }
         // Claude now shares the exclusive final-reveal route, covered above.
         // Build 81: a rich composer is armed by a verified rich-composer paste of that app
-        // (browsers never: browserRichComposersFailClosed).
+        // (browsers never: browserFieldsKeepOneCompletePasteAfterPlainOrRichCalibration).
         for bundle in ["com.apple.Notes", "com.apple.TextEdit", "com.tinyspeck.slackmacgap"] {
             PasteAckHistory.record(bundle: bundle, acknowledged: true, richComposer: true, in: defaults)
             #expect(PasteAckHistory.allowsStaging(bundle: bundle, richComposer: true, in: defaults))

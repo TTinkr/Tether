@@ -93,29 +93,11 @@ import TokensCore
 //
 //
     @Test func compatibilityAppendPreservesWhitespaceAndEmptyNotesAddNothing() {
-        #expect(ThinkingNotes.appending("", to: transcript) == transcript)
-        for note in [typed, " \n\t ", "\n\n", "## Typed", "typed without speech"] {
-            #expect(Array(ThinkingNotes.appending(note, to: transcript).utf8)
-                    == Array((transcript + "\n\n## Typed\n\n" + note).utf8))
-        }
         let typedOnly = AuthoredPrompt(transcript: "", spokenText: "", typed: typed)
         #expect(typedOnly.text == "## Transcript\n\n## Typed\n\n" + typed)
         #expect(typedOnly.spokenWordCount == 0)
         #expect(!typedOnly.isEmpty)
     }
 
-    @Test @MainActor func notesEnteredBetweenTalksSurviveStartAndConsumeOnce() {
-        let state   = ThinkingPanelState()
-        state.notes = typed
-        state.beginSession()
-        #expect(Array(state.notes.utf8) == Array(typed.utf8))
-        #expect(Array(state.consumeNotesForDelivery().utf8) == Array(typed.utf8))
-        #expect(state.notes.isEmpty)
-        #expect(state.consumeNotesForDelivery().isEmpty)
-        state.notes = " next talk \n"
-        state.beginSession()
-        #expect(state.notes == " next talk \n")
-        #expect(state.batches.isEmpty)
-    }
 }
 

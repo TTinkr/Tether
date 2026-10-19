@@ -95,7 +95,10 @@ struct SlowFormatter: FormattingProvider {
         let quick            = LocalFormatter(provider: EchoFormatter(), defaults: defaults)
         var quickCompletions = 0
         quick.finishWithin(0.5, raw: "keep all these words") { quickCompletions += 1 }
-        try await Task.sleep(nanoseconds: 150_000_000)
+        let quickDeadline = ProcessInfo.processInfo.systemUptime + 2
+        while quickCompletions == 0 && ProcessInfo.processInfo.systemUptime < quickDeadline {
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
         precondition(quickCompletions == 1)
         precondition(quick.rendered("keep all these words") == "keep all these words.")
         let otherName = "TTTTelepathyTests-" + UUID().uuidString

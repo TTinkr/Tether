@@ -119,7 +119,7 @@ private final class UnwritableFolder: FileManager {
             TokensHomeLiveCard.stopLine(phase: .capturing, mode: .tap, keyName: key, keepsInApp: false),
             TokensHomeLiveCard.stopLine(phase: .capturing, mode: .hold, keyName: key, keepsInApp: false),
         ]
-        #expect(lines == ["Your words will be saved to Recent.", "Your words will paste when ready.",
+        #expect(lines == ["Your words will be saved to History.", "Your words will paste when ready.",
                           "Press Right Option to stop.", "Release Right Option to stop."])
         #expect(lines.allSatisfy { !$0.lowercased().contains("dictat") })
     }
@@ -214,7 +214,7 @@ private final class UnwritableFolder: FileManager {
     @Test func liveLinksAreLabelledAndIdentified() throws {
         typealias Card = TokensHomeLiveCard
         #expect([Card.stopTitle, Card.stopHelp, Card.stopLabel, Card.stopHint] ==
-                ["Stop", "Stop and keep the words in Recent", "Stop talk", "Keeps the words in Recent. Nothing is pasted."])
+                ["Stop", "Stop and keep the words in History", "Stop talk", "Keeps the words in History. Nothing is pasted."])
         #expect([Card.discardTitle, Card.discardHelp, Card.discardLabel, Card.discardHint] ==
                 ["Discard", "End this talk without pasting or saving the words", "Discard talk",
                  "Ends this talk. The words are not pasted or saved."])
@@ -225,7 +225,8 @@ private final class UnwritableFolder: FileManager {
 
         let home = try source("Sources/Tokens/Features/Home/TokensHomeDashboard.swift")
         let cardStart = try #require(home.range(of: "struct TokensHomeLiveCard: View {"))
-        let cardEnd = try #require(home.range(of: "struct TokensHomeWaveform: View {"))
+        // Build 83: the red band became TokensChalkWave (defined earlier); the card now ends the page section.
+        let cardEnd = try #require(home.range(of: "struct TokensHomeEngine: Equatable {", range: cardStart.upperBound..<home.endIndex))
         let card = String(home[cardStart.lowerBound..<cardEnd.lowerBound])
         #expect(inOrder(["Spacer(minLength: 12)", "tokens.home.live-stop", "tokens.home.live-discard"], in: card))
         // Each link calls its own action: a swap would throw away words behind a "Stop" (review of 5e881ef).
@@ -233,7 +234,9 @@ private final class UnwritableFolder: FileManager {
                          "if controls.discard {", "Button(Self.discardTitle, action: discard)", "tokens.home.live-discard"], in: card))
         #expect(card.components(separatedBy: "action: stop)").count == 2)
         #expect(card.components(separatedBy: "action: discard)").count == 2)
+        // Build 83: the live block moved from homePage into homeColumn (Ready Home is one sentence).
         let page = try body(of: "func homePage(inner: CGFloat) -> some View {", in: home)
+            + body(of: "private func homeColumn(", in: home)
         for wiring in ["let confirmed = fixture == nil ? model.audioIsConfirmed : detail != .arming",
                        "heldByKey: fixture == nil && model.talkIsHeldByKey)",
                        "controls: controls,",

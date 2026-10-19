@@ -79,7 +79,7 @@ struct SpeechModelStoreTests {
         #expect(starts.withLock { $0 } == 1)
         #expect(await pool.isWarm)
         let store = try source("Speech/SpeechModelStore.swift")
-        let choose = try #require(store.range(of: "func choose(_ id: String) -> Bool"))
+        let choose = try #require(store.range(of: "func choose(_ id: String, byHand: Bool = true) -> Bool"))
         #expect(!store[choose.lowerBound...].contains("unloadIfIdle()"))
         // A load a newer pick replaced reports the newer load, not "canceled".
         #expect(try source("Speech/AudioCapture+Recognition.swift")
@@ -95,6 +95,34 @@ struct SpeechModelStoreTests {
         #expect(settings.contains("use: chooseSpeechModel"))
         #expect(store.contains("if !ok, wasReady, entry.id != SpeechModelCatalog.orukeetID {"))
         #expect(store.contains("guard !slots.isBusy(id), states[id] == .ready else { return }"))
+    }
+
+    /// unless another model was chosen while it downloaded. Proof downloads never switch.
+    @Test func aDownloadYouStartBecomesTheModelInUse() throws {
+        #expect(SpeechModelStore.choosesWhenReady(revisionAtStart: 3, revisionNow: 3))
+        #expect(!SpeechModelStore.choosesWhenReady(revisionAtStart: 3, revisionNow: 4))
+        let settings = try source("Features/Home/TokensHomeSettings.swift")
+        let store = try source("Speech/SpeechModelStore.swift")
+        #expect(settings.contains("downloadIfMissing($0.id, selectWhenReady: true)"))
+        #expect(store.contains("if !wasReady { store.download(id) }"))  // the proof path does not switch
+        // Orukeet too is chosen only once verified, never when its download starts (Codex review of 86).
+        #expect(store.contains("if selectWhenReady { orukeetChoiceAtStart = choiceAtStart }"))
+        #expect(!store.contains("if selectWhenReady { choose(id) }"))
+    }
+
+    /// Codex QA of 86: Apple, then B, then Apple again by hand during a download keeps Apple.
+    @MainActor @Test func aChoiceByHandDuringADownloadWinsEvenWhenItReturnsToTheStart() throws {
+        let store = SpeechModelStore.shared
+        let saved = UserDefaults.standard.string(forKey: SpeechEngineChoice.preferenceKey)
+        defer { UserDefaults.standard.set(saved, forKey: SpeechEngineChoice.preferenceKey) }
+        let start = store.choiceRevision
+        #expect(store.choose(SpeechModelCatalog.appleID))
+        #expect(store.choose(SpeechModelCatalog.appleID))   // A -> ... -> A: same name, new choices
+        #expect(!SpeechModelStore.choosesWhenReady(revisionAtStart: start, revisionNow: store.choiceRevision))
+        // An automatic choice after a download does not count as a choice by hand.
+        let before = store.choiceRevision
+        _ = store.choose(SpeechModelCatalog.appleID, byHand: false)
+        #expect(store.choiceRevision == before)
     }
 
     /// Cancel puts the row back to Download at once; a stale attempt never changes the row; Remove's

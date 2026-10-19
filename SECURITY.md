@@ -8,4 +8,4 @@ Community builds do not inherit the security review, signing identity or notariz
 
 ## Known optional dependency limitation
 
-The pinned Orukeet SDK includes SentencePiece 0.2.0, affected by [CVE-2026-1260](https://github.com/advisories/GHSA-38vq-g6vr-w8wf). It is absent from the default Parakeet community build, which uses the separately pinned transcribe.cpp runtime. Orukeet models are hash-pinned, but an Orukeet-enabled distribution is blocked until a patched SDK is pinned and verified. See [BUILDING](docs/BUILDING.md) for the local-preview scope. Do not describe this tree as having no known vulnerable dependencies.
+The prior Orukeet SDK included SentencePiece 0.2.0, affected by [CVE-2026-1260](https://github.com/advisories/GHSA-38vq-g6vr-w8wf). This candidate pins a local rebuild using SentencePiece 0.2.2. Orukeet-enabled distribution remains blocked pending independent qualification of the rebuilt SDK. The default Parakeet community build uses the separately pinned transcribe.cpp runtime and does not include this SDK. See [BUILDING](docs/BUILDING.md) for the local-preview scope.

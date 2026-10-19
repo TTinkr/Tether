@@ -124,10 +124,23 @@ extension TargetDelivery {
             Keep exact application/window/element and available value checks.
             */
             let role = stringAttribute(kAXRoleAttribute as String, from: element) ?? ""
-            return ["AXTextField", "AXTextArea", "AXComboBox"].contains(role)
+            return ["AXTextField", "AXTextArea", "AXComboBox"].contains(role) || caretTrusted(role: role)
         }
         guard let expected = target.selection, let current = selectedRange(in: element) else { return false }
         return current.location == expected.location && current.length == expected.length
+    }
+
+    /*
+    Caret trust (build 85; UX review: "it should always paste where the cursor is ... I don't want
+    it to be pasting in random places"). A browser page or group still reported as focused after
+    the caret search (TargetDelivery.caretTextBox) names no box Tokens can read, but Command-V
+    goes to the macOS keyboard focus, which is the blinking cursor. With the same app, window
+    and element as at Stop (every other check unchanged, secure fields still refused), it is
+    pasted once. Such a paste can never be confirmed, so it never sends Return and the words
+    stay ready to Copy.
+    */
+    static func caretTrusted(role: String) -> Bool {
+        DestinationFocus.containerRoles.contains(role)
     }
 
     static func exactValue(_ target: CapturedTarget) -> Bool {

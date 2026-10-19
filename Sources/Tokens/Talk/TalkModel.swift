@@ -75,11 +75,14 @@ final class TalkModel: ObservableObject {
     */
     @Published var phase: TalkPhase = .idle {
         didSet {
+            if phase != .failed, bubbleStandbyOverride { bubbleStandbyOverride = false }
             updater.resumeWhenIdle()
             if phase != .capturing && phase != .finalizing { pauseAsides.stop() }
-            if phase != .capturing { temple.end() }
+            // The pointer ring is a while-talking cue only; at rest it goes at once (build 83).
+            PasteMarker.ringWhileTalking = phase == .capturing
+            if phase != .capturing, PasteMarker.shared.mode == .cursor { PasteMarker.shared.hide() }
             // A talk that fails mid-way takes its box down at once, not at the next tick (build 81).
-            if phase != .capturing, destinationPreviewGeneration != nil { stopDestinationPreview() }
+            syncDestinationPreview()
             /*
             A talk that ends between Stop and delivery without delivering (failure, nothing to
             paste) gives Return back to every app at once (build 81). Delivery itself releases
@@ -327,9 +330,6 @@ final class TalkModel: ObservableObject {
     /// Optional generated appendix for lab Tokens; off by default.
     let tinkering = Tinkering()
 
-    /// Retained thinking-panel owner; launchPanelAvailable disables its public launch UI.
-    let temple = TokensThinkingTemple()
-
     /*
     Retained notes service. Public capture does not start it or append its generated
     summary to the delivered transcript; background consent is managed separately.
@@ -382,6 +382,15 @@ final class TalkModel: ObservableObject {
     /// Reads the frontmost app's text field when Stop happens.
     let recoveryWindows = RecoveryWindowController()
     @Published var destinationLabel = "Choose a text field"
+    /// Presentation-only: a failed overlay that has completed its own visibility lifecycle
+    /// yields to compact standby without clearing the error or any retained words on Home.
+    @Published var bubbleStandbyOverride = false {
+        didSet {
+            if oldValue != bubbleStandbyOverride { syncDestinationPreview() }
+        }
+    }
+    var persistentDestinationPreviewEnabled = false
+    var destinationPreviewSuspended = false
     var destinationPreviewTimer: Timer?
     var destinationPreviewGeneration: UUID?
     var destinationPreviewInFlight = false

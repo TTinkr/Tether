@@ -44,11 +44,11 @@ struct BubbleGhostTests {
         #expect(TokensThinkingBubble.isGhost(audioConfirmed: false, pause: nil))
         #expect(!TokensThinkingBubble.isGhost(audioConfirmed: true, pause: nil))
         // Ordinary gaps between words (the detector reports from 0.2 s) keep the bubble steady.
-        for seconds in [0.2, 0.3, 0.6, 0.99] {
+        for seconds in [0.2, 0.3, 0.49] {
             #expect(!TokensThinkingBubble.isGhost(audioConfirmed: true, pause: LiveThinkingPause(seconds: seconds, estimated: false)))
             #expect(!TokensThinkingBubble.isGhost(audioConfirmed: true, pause: LiveThinkingPause(seconds: seconds, estimated: true)))
         }
-        for seconds in [1.0, 1.2, 4.0] {
+        for seconds in [0.5, 0.6, 1.2, 4.0] {
             #expect(TokensThinkingBubble.isGhost(audioConfirmed: true, pause: LiveThinkingPause(seconds: seconds, estimated: false)))
         }
     }
@@ -94,7 +94,7 @@ private struct BubbleRenderHost: View {
     var body: some View {
         let size = vertical ? BubbleLayout.compactVerticalSize : panelDefaultSize
         let samples: [Double] = level.map(Self.samples) ?? []
-        let pause = level == nil ? LiveThinkingPause(seconds: 2.1, estimated: false) : nil
+        let pause = level == nil ? LiveThinkingPause(seconds: 5.24, estimated: false) : nil
         BubbleControlSurface(vertical: vertical, cancelLabel: "Discard talk", finishLabel: "Finish and paste",
                              cancel: {}, finish: {}, showsControls: controls,
                              ghost: TokensThinkingBubble.isGhost(audioConfirmed: true, pause: pause)) {
