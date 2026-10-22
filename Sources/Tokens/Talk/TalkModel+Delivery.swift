@@ -32,7 +32,7 @@ extension TalkModel {
     // Delivery — put the words into the target app, or hold them
 
     /// Final delivery for one talk. Renders the final text, then:
-    ///   no words      → delivered, reset
+    ///   no words      → delivered, reset; nothing pasted, saved, held or sent (build 89)
     ///   no target     → hold the words ("Paste unavailable") and show them
     ///   verified      → press Return if asked or reserved; if an asked-for Return fails,
     ///                   hold the words; otherwise count it, resolve recovery, celebrate
@@ -82,6 +82,22 @@ extension TalkModel {
         let canonical = BrandVocabulary.apply(
             to: rawPayload.trimmingCharacters(in: .whitespacesAndNewlines)
         )
+        let spokenText = CharacterTalk.render(canonical).deliveryText
+        /*
+        Hard rule (build 89): no words, no paste. Decide from the spoken words before
+        any footer, thinking note, History entry, recovery item or Return. Build 88 checked the
+        finished text, so a silent talk with metadata on pasted "— π [0 wpm, 2.08s, 0 characters]".
+        A staged talk that already wrote pieces (it starts only with words) keeps its recovery path.
+        */
+        guard TokensOutputOptions.hasWords(spokenText) || !(stagedCommitted ?? "").isEmpty else {
+            _ = pauseAsides.stop()
+            Diagnostics.event("delivery_empty session=\(session.uuidString)")
+            logStopTiming(stage: "delivery_empty", session: session)
+            phase = .delivered
+            hideSurface()
+            resetSession()
+            return
+        }
         /*
         The words in their final layout: staged, the Tokens thinking layout, or the
         plain/Markdown renderer.
@@ -103,8 +119,8 @@ extension TalkModel {
         let publicTalk = selectedProduct == "Tokens"
         let useDecorations = !publicTalk && shouldDecorateDelivery(session: session)
         _ = pauseAsides.stop()
-        let spokenText = CharacterTalk.render(canonical).deliveryText
-        let authoredParts = publicTalk ? TokensOutputOptions.parts(faithful, metadata: metadataEnabled) : nil
+        let authoredParts = publicTalk
+            ? TokensOutputOptions.parts(faithful, metadata: metadataEnabled, thinking: thinkingTracesEnabled) : nil
         let authored = publicTalk
             ? AuthoredPrompt(transcript: authoredParts!.text, spokenText: spokenText)
             : AuthoredPrompt(transcript: faithful, spokenText: spokenText)

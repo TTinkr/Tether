@@ -106,6 +106,7 @@ extension TalkModel {
         */
         rightOptionMode = RightOptionMode(rawValue: preferences.string(forKey: "TTTRightOptionMode.v1") ?? "") ?? .tap
         metadataEnabled = preferences.bool(forKey: product == "Tokens" ? TokensOutputOptions.metadataKey : "TTTMetadataFooterEnabled.v1")
+        thinkingTracesEnabled = product == "Tokens" && preferences.bool(forKey: TokensOutputOptions.thinkingKey)
         characterTagsEnabled = product == "Tokens" && TokensOutputOptions.characterTags(in: preferences)
         numberTagsEnabled = product == "Tokens" && TokensOutputOptions.numberTags(in: preferences)
         markdownEnabled = product == "Talk" && TranscriptRenderMode.current(in: preferences) == .markdown

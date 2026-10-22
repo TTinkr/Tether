@@ -84,6 +84,15 @@ extension TalkModel {
 //
     /// Receipt on/off. Saved to the current product's preferences (not in synthetic runs);
     /// re-renders the live words.
+    /// "[thinking 5.24s]" lines in what is pasted (Settings › Transcript extras, build 88).
+    func selectThinkingTracesEnabled(_ enabled: Bool) {
+        thinkingTracesEnabled = enabled
+        if !isSyntheticRun { preferences.set(enabled, forKey: TokensOutputOptions.thinkingKey) }
+        if selectedProduct == "Tokens" { thinkingFormatter.setActive(thinkingMetadataEnabled && !isSyntheticRun) }
+        Diagnostics.event("thinking_traces enabled=\(enabled)")
+        rerenderActiveTranscript()
+    }
+
     func selectMetadataEnabled(_ enabled: Bool) {
         metadataEnabled = enabled
         if !isSyntheticRun {

@@ -63,7 +63,7 @@ enum TalkReplayPipeline {
         let canonical = TalkVocabulary.normalizeRecognizedText(input.trimmingCharacters(in: .whitespacesAndNewlines),
                                                                agentNameFixes: agentNameFixes)
         let body = TokensOutputOptions.body(canonical, characterTags: characterTags, numberTags: characterTags)
-        return TokensOutputOptions.parts(body, metadata: false).text
+        return TokensOutputOptions.parts(body, metadata: false, thinking: true).text
     }
 
     static func deliver(_ input: String, pause: TalkReplayCase.Pause, characterTags: Bool,
@@ -85,7 +85,7 @@ enum TalkReplayPipeline {
             return [outputBody, ThinkingComposer.unplacedSummary(pauses.map(\.duration))]
                 .compactMap { $0 }.joined(separator: "\n\n")
         }
-        return TokensOutputOptions.parts(composed, metadata: false).text
+        return TokensOutputOptions.parts(composed, metadata: false, thinking: true).text
     }
 
     /// True when every expectation the case declares matches.

@@ -52,6 +52,35 @@ enum InlineTalkMarkdown {
     }
 
     /*
+    Thinking traces off (build 88): each placed pause note and the line break render() put before
+    it become one space, so the words read as one run; unplaced and historical markers go too
+    (removingMarkers). Code and spelling spans keep their bytes (transformProse).
+    */
+    /// Thinking traces on: each placed pause note reads "[thinking 5.24s]"; code keeps its bytes.
+    static func thinkingLines(_ body: String) -> String {
+        transformProse(body) { prose in
+            var out = prose
+            let range = NSRange(prose.startIndex..., in: prose)
+            for match in pauseNote.matches(in: prose, range: range).reversed() {
+                guard let whole = Range(match.range, in: out), let number = Range(match.range(at: 1), in: prose),
+                      let seconds = Double(prose[number]) else { continue }
+                out.replaceSubrange(whole, with: String(format: "[thinking %.2fs]", seconds))
+            }
+            return out
+        }
+    }
+
+    private static let pauseNote = try! NSRegularExpression(pattern: #"\*\[pause (\d+\.\d+)\]\*"#)
+
+    static func joiningPauseNotes(_ body: String) -> String {
+        let joined = transformProse(body) { prose in
+            prose.replacingOccurrences(of: #"[ \t]*\n?[ \t]*\*\[pause \d+\.\d{4}\]\*[ \t]?"#, with: " ",
+                                       options: .regularExpression)
+        }
+        return removingMarkers(joined).trimmingCharacters(in: .whitespaces)
+    }
+
+    /*
     Only exact generated tags and historical dash-delimited markers are stripped by spoken-only
     readers. A bare TK identifier or literal parenthesized duration survives.
     */

@@ -83,6 +83,7 @@ extension TalkModel {
         if !isSyntheticRun {
             seedTelepathyPreferences()
             metadataEnabled     = preferences.bool(forKey: TokensOutputOptions.metadataKey)
+            thinkingTracesEnabled = preferences.bool(forKey: TokensOutputOptions.thinkingKey)
             characterTagsEnabled = TokensOutputOptions.characterTags(in: preferences)
             numberTagsEnabled   = TokensOutputOptions.numberTags(in: preferences)
             markdownEnabled     = false

@@ -228,8 +228,8 @@
   {
    "id": "agent-code-x",
    "category": "agents",
-   "input": "hand the packaging to code x on gpt luna",
-   "expected_raw": "hand the packaging to Codex on gpt luna",
+   "input": "hand the packaging to code x on gpt",
+   "expected_raw": "hand the packaging to Codex on gpt",
    "expected_fail": true,
    "reason": "'code x' (split mishearing of Codex) has no alias; only 'codecs' is covered.",
    "agent_name_fixes": true

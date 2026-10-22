@@ -296,6 +296,7 @@ final class TalkModel: ObservableObject {
 
     // Output settings for the current product: receipt, Markdown, Speed of Sound.
     @Published var metadataEnabled = false
+    @Published var thinkingTracesEnabled = false
     @Published var characterTagsEnabled = true
     @Published var numberTagsEnabled = true
 
@@ -576,6 +577,7 @@ final class TalkModel: ObservableObject {
             rawValue: UserDefaults.standard.string(forKey: "TTTRightOptionMode.v1") ?? ""
         ) ?? .tap
         metadataEnabled     = UserDefaults.standard.bool(forKey: TokensOutputOptions.metadataKey)
+        thinkingTracesEnabled = UserDefaults.standard.bool(forKey: TokensOutputOptions.thinkingKey)
         characterTagsEnabled = TokensOutputOptions.characterTags(in: .standard)
         numberTagsEnabled   = TokensOutputOptions.numberTags(in: .standard)
         markdownEnabled     = TranscriptRenderMode.current() == .markdown

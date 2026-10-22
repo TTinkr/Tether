@@ -50,7 +50,8 @@ extension TalkModel {
     var thinkingExperience: Bool { selectedProduct == "Tokens" && !standalone }
 
     /// Output extras never select the capture bubble or change its geometry.
-    var thinkingMetadataEnabled: Bool { thinkingExperience && metadataEnabled }
+    /// The thinking layout (pause notes, receipt) runs when either output switch needs it (build 88).
+    var thinkingMetadataEnabled: Bool { thinkingExperience && (metadataEnabled || thinkingTracesEnabled) }
 
     /// Only paragraphs made wholly of finalized words are offered for layout;
     /// the growing tail waits until recognition has settled it.

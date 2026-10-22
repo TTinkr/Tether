@@ -172,7 +172,8 @@ struct ScreenReferenceSamplerTests {
         let new = TokensOutputOptions.parts(rendered, metadata: true)
         #expect(new.body == old.body + "\n— π [120 wpm, 1.00s, 11 characters]" && new.marker.isEmpty
             && new.metadata.isEmpty)
-        #expect(TokensOutputOptions.parts(rendered, metadata: false).text == rendered)
+        // Build 88: the thinking layout can run with metadata off; only its words are delivered.
+        #expect(TokensOutputOptions.parts(rendered, metadata: false).text == "hello there")
     }
 }
 

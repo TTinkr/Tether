@@ -68,6 +68,8 @@ struct DestinationFeedbackPolicyTests {
     final class UnshownPanel: NSPanel {
         var requested = false
         override var isVisible: Bool { requested }
+        // Not about Spaces: a shown test window counts as on the active Space (build 89 recovery stays out).
+        override var isOnActiveSpace: Bool { requested }
         override func orderFrontRegardless() { requested = true }
         override func orderOut(_ sender: Any?) { requested = false }
     }
@@ -76,7 +78,7 @@ struct DestinationFeedbackPolicyTests {
         let panel = UnshownPanel(contentRect: CGRect(x: 900, y: 700, width: 300, height: 80),
                                  styleMask: [.borderless], backing: .buffered, defer: true)
         var frame: CGRect? = nil
-        let marker = PasteMarker(panel: panel, cursorFrame: { frame }, enabled: { true })
+        let marker = PasteMarker(panel: panel, makePanel: { panel }, cursorFrame: { frame }, enabled: { true })
         defer { marker.hide() }
         marker.showCursor()
         #expect(marker.mode == .cursor && !panel.isVisible)
@@ -97,7 +99,7 @@ struct DestinationFeedbackPolicyTests {
     @Test func disablingFeedbackRemovesTheCursor() {
         let panel = UnshownPanel(contentRect: .zero, styleMask: [.borderless], backing: .buffered, defer: true)
         var enabled = true
-        let marker = PasteMarker(panel: panel, cursorFrame: { CGRect(x: 20, y: 30, width: 30, height: 30) }, enabled: { enabled })
+        let marker = PasteMarker(panel: panel, makePanel: { panel }, cursorFrame: { CGRect(x: 20, y: 30, width: 30, height: 30) }, enabled: { enabled })
         marker.showCursor()
         #expect(panel.isVisible)
         enabled = false
@@ -111,8 +113,9 @@ struct DestinationFeedbackPolicyTests {
                            y: screen.frame.maxY - screen.visibleFrame.midY - 30,
                            width: 200, height: 60)
         let panel = UnshownPanel(contentRect: .zero, styleMask: [.borderless], backing: .buffered, defer: true)
-        let cursor = CGRect(x: screen.visibleFrame.midX, y: screen.visibleFrame.midY, width: 30, height: 30)
-        let marker = PasteMarker(panel: panel, cursorFrame: { cursor }, enabled: { true })
+        // Whole points: windows snap to them, and visibleFrame's middle can be x.5 (menu bar shown).
+        let cursor = CGRect(x: screen.visibleFrame.midX.rounded(), y: screen.visibleFrame.midY.rounded(), width: 30, height: 30)
+        let marker = PasteMarker(panel: panel, makePanel: { panel }, cursorFrame: { cursor }, enabled: { true })
         defer { marker.hide() }
         marker.show(field: field, caret: nil, shortcutName: "Right Option")
         #expect(marker.mode == .field)

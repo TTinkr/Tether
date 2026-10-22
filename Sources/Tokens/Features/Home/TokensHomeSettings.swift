@@ -88,8 +88,17 @@ extension TokensHome {
                 }
                 TokensRuleSpacer(cells: 1)
                 TokensSettingsSection(title: "Transcript extras") {
+                    TokensSettingsRow(title: "Include thinking traces",
+                                      caption: "Mark long pauses as [thinking 2.40s] between your words.") {
+                        Toggle(isOn: Binding(get: { model.thinkingTracesEnabled }, set: { model.selectThinkingTracesEnabled($0) })) { EmptyView() }
+                            .toggleStyle(TokensSwitchStyle())
+                            .disabled(busy)
+                            .accessibilityLabel("Include thinking traces")
+                            .accessibilityValue(model.thinkingTracesEnabled ? "On" : "Off")
+                            .accessibilityIdentifier("tokens.settings.thinking")
+                    }
                     TokensSettingsRow(title: "Include metadata",
-                                      caption: "Add the π heading, timing, word count, and pause notes.") {
+                                      caption: "End with one line: words per minute, seconds and characters.") {
                         Toggle(isOn: Binding(get: { model.metadataEnabled }, set: { model.selectMetadataEnabled($0) })) { EmptyView() }
                             .toggleStyle(TokensSwitchStyle())
                             .disabled(busy)
