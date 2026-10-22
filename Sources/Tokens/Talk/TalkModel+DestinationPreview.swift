@@ -67,7 +67,8 @@ extension TalkModel {
     }
 
     func stopDestinationPreview() {
-        PasteMarker.shared.hide()
+        // A new cue window per talk (build 89): an old one could stay attached to one full-screen Space.
+        PasteMarker.shared.discardWindow()
         PasteMarker.shared.resetDiagnostics()
         DestinationPreviewInvalidation.shared.stop()
         DestinationPreview.queue.async { DestinationAXObservation.shared.stop() }

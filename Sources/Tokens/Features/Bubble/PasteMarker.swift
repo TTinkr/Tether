@@ -295,21 +295,27 @@ struct PasteMarkerView: View {
 /// One click-through panel, shown and moved only from the destination preview (main thread).
 final class PasteMarker {
     static let shared = PasteMarker()
-    /// dictating is off"). TalkModel sets this on every phase change; the corners keep standby.
+    /// The ring and corners appear only during capture; TalkModel updates this on phase changes.
     static var ringWhileTalking = false
     private let cursorFrame: () -> CGRect?
     private let enabled: () -> Bool
     private let recordEvent: (String) -> Void
+    private let uptime: () -> TimeInterval
+    private let panelFactory: () -> NSPanel
 
     init(panel: NSPanel? = nil,
+         makePanel: @escaping () -> NSPanel = PasteMarker.makeCuePanel,
          cursorFrame: @escaping () -> CGRect? = {
              DestinationCursorGeometry.frame(at: NSEvent.mouseLocation, screens: NSScreen.screens.map(\.frame))
          }, enabled: @escaping () -> Bool = { PasteCursorRingPreference.load() && PasteMarker.ringWhileTalking },
-         recordEvent: @escaping (String) -> Void = { Diagnostics.event($0) }) {
+         recordEvent: @escaping (String) -> Void = { Diagnostics.event($0) },
+         uptime: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }) {
         self.panel = panel
+        self.panelFactory = makePanel
         self.cursorFrame = cursorFrame
         self.enabled = enabled
         self.recordEvent = recordEvent
+        self.uptime = uptime
     }
     private var panel: NSPanel?
     private var hosting: NSHostingView<PasteMarkerView>?
@@ -319,6 +325,12 @@ final class PasteMarker {
     private var cursorTimer: Timer?
     private var cursorMonitors: [Any] = []
     private var expiry: DispatchWorkItem?
+    private var lastSpaceRecovery: TimeInterval?
+    private var spaceRecoveries = 0
+    /// The current window has been shown at least once (see `panelForOrderingIn`).
+    private var panelPresented = false
+    static let spaceRecoveryInterval: TimeInterval = 1
+    static let spaceRecoveryLimit = 3
     private(set) var mode: DestinationCueMode = .hidden
     /// Marker lines this talk; a flickering marker logs its first few changes, not hundreds.
     private var notesThisTalk = 0
@@ -329,7 +341,7 @@ final class PasteMarker {
     func show(field: CGRect?, caret: CGRect?, shortcutName: String, role: String? = nil) {
         stopCursorTracking()
         expiry?.cancel()
-        let panel = self.panel ?? makePanel()
+        let panel = panelForOrderingIn()
         let primaryHeight = NSScreen.screens.first?.frame.maxY ?? 0
         let visible = NSScreen.screens.map(\.visibleFrame)
         var target: CGRect?
@@ -368,14 +380,13 @@ final class PasteMarker {
         // Once per distinct outcome per talk, not once per poll; the size shows how big it drew.
         note("paste_marker_shown framed=\(framed) reason=\(reason) role=\(role ?? "-") cue=\(Int(target.width))x\(Int(target.height))")
         guard !panel.isVisible else {
-            // Ordered is not necessarily on the user's Space (build87 live diagnostics).
-            if !panel.isOnActiveSpace { panel.orderFrontRegardless() }
+            recoverSpaceMembershipIfNeeded(panel)
             notePresentation()
             return
         }
         let reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         panel.alphaValue = reduceMotion ? 1 : 0
-        panel.orderFrontRegardless()
+        present(panel)
         if !reduceMotion {
             NSAnimationContext.runAnimationGroup({ $0.duration = 0.14; panel.animator().alphaValue = 1 },
                                                 completionHandler: { [weak self] in self?.notePresentation() })
@@ -415,6 +426,9 @@ final class PasteMarker {
     /// A new talk logs its outcomes afresh.
     func resetDiagnostics() { lastNote = nil; lastPresentation = nil; notesThisTalk = 0 }
 
+    /// The cue's current window, for tests.
+    var currentWindow: NSPanel? { panel }
+
     /// Whether the marker is on screen now (the destination preview keeps it through a blip).
     var isShowing: Bool { panel?.isVisible == true }
 
@@ -427,6 +441,8 @@ final class PasteMarker {
         expiry?.cancel(); expiry = nil
         stopCursorTracking()
         mode = .hidden
+        lastSpaceRecovery = nil
+        spaceRecoveries = 0
         lastFrame = nil
         guard let panel, panel.isVisible else { notePresentation(); return }
         if let reason { note("paste_marker_hidden reason=\(reason)") }
@@ -439,10 +455,10 @@ final class PasteMarker {
     func showCursor() {
         expiry?.cancel(); expiry = nil
         guard enabled() else { hide(); return }
-        if panel == nil { _ = makePanel() }
+        if panel == nil { _ = freshPanel() }
         let changed = mode != .cursor
         mode = .cursor
-        if changed { hosting?.rootView = PasteMarkerView(shortcutName: "", framed: false, cursorFallback: true) }
+        if changed { hosting?.rootView = Self.ring }
         refreshCursorPlacement()
         /*
         The ring moves on every mouse event, wherever the pointer is (UX review: a 30 Hz
@@ -477,12 +493,17 @@ final class PasteMarker {
     }
 
     func refreshCursorPlacement() {
-        guard mode == .cursor, let panel else { return }
+        guard mode == .cursor, var panel else { return }
+        guard enabled() else { hide(); return }
         guard let frame = cursorFrame() else {
             if panel.isVisible { panel.orderOut(nil) }
             lastFrame = nil
             notePresentation()
             return
+        }
+        if !panel.isVisible {
+            panel = panelForOrderingIn()
+            hosting?.rootView = Self.ring
         }
         if lastFrame != frame {
             // Same size every time: moving the origin alone skips a relayout per event.
@@ -490,11 +511,86 @@ final class PasteMarker {
             lastFrame = frame
         }
         panel.alphaValue = 1
-        if !panel.isVisible || !panel.isOnActiveSpace { panel.orderFrontRegardless() }
+        if !panel.isVisible { present(panel) }
+        else { recoverSpaceMembershipIfNeeded(panel) }
         notePresentation()
     }
 
-    private func makePanel() -> NSPanel {
+    /*
+    Build 89: over full-screen apps the ring and the
+    dotted box never drew, while the bubble did. The window server showed the cue window attached
+    to one Space instead of every Space, and ordering that same window out and in again (builds
+    87–88) never fixed it. A new window joins every Space, so this safety net now replaces the
+    window, keeping frame and content at full alpha (see `panelForOrderingIn` for the cause). Bounded
+    and rate-limited; it never activates Tokens or takes focus, and a stop always wins.
+    */
+    private func recoverSpaceMembershipIfNeeded(_ panel: NSPanel) {
+        guard mode != .hidden, panel.isVisible, !panel.isOnActiveSpace,
+              spaceRecoveries < Self.spaceRecoveryLimit else { return }
+        let now = uptime()
+        if let lastSpaceRecovery, now - lastSpaceRecovery < Self.spaceRecoveryInterval { return }
+        lastSpaceRecovery = now
+        spaceRecoveries += 1
+        note("paste_cue_space_recovery attempt=\(spaceRecoveries) fresh_window=true")
+        let content = hosting?.rootView
+        let replacement = freshPanel()
+        replacement.setFrame(panel.frame, display: false)
+        // Full alpha: the old window may be mid fade-in, and that animation stays with it.
+        replacement.alphaValue = 1
+        if let content { hosting?.rootView = content }
+        // The old window is dropped; with no reference left it ends in the window server.
+        panel.orderOut(nil)
+        // orderOut can synchronously notify observers; a stop must win over recovery.
+        guard mode != .hidden, self.panel === replacement else { return }
+        present(replacement)
+    }
+
+    /*
+    Build 89 root cause (2026-10-20, window-server probes): when a full-screen Space
+    closes, every hidden every-Space window is left attached to one Space, whatever its
+    collection behavior; shown windows such as the bubble keep every Space. Showing that same
+    window again, or setting its collection behavior again, does not restore every Space; a new
+    window does. So a window that was shown and then hidden is never shown again: it is dropped
+    and a new one takes its place. A window not yet shown (just made, or a test's) is kept.
+    */
+    private func panelForOrderingIn() -> NSPanel {
+        if let panel, panel.isVisible || !panelPresented { return panel }
+        lastFrame = nil
+        return freshPanel()
+    }
+
+    private func present(_ panel: NSPanel) {
+        panel.orderFrontRegardless()
+        panelPresented = true
+    }
+
+    private static var ring: PasteMarkerView { PasteMarkerView(shortcutName: "", framed: false, cursorFallback: true) }
+
+    /// Ends this cue window; the next talk draws in a new one (build 89: a long-lived window
+    /// could be left attached to one full-screen Space). Called when a talk's preview starts and stops.
+    func discardWindow() {
+        hide()
+        panel?.orderOut(nil)
+        self.panel = nil
+        hosting = nil
+        lastFrame = nil
+    }
+
+    /// A new window from the factory, with the cue's SwiftUI content; it becomes the current window.
+    @discardableResult
+    private func freshPanel() -> NSPanel {
+        let panel = panelFactory()
+        let hosting = NSHostingView(rootView: PasteMarkerView(shortcutName: ""))
+        hosting.sizingOptions = []
+        hosting.autoresizingMask = [.width, .height]
+        panel.contentView = hosting
+        self.hosting = hosting
+        self.panel = panel
+        panelPresented = false
+        return panel
+    }
+
+    static func makeCuePanel() -> NSPanel {
         let panel = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 96, height: 18),
                             styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: true)
         panel.isFloatingPanel = true
@@ -511,12 +607,6 @@ final class PasteMarker {
                                     .fullScreenAuxiliary, .stationary, .ignoresCycle]
         // Hide Others (⌥⌘H) in the app being talked into must not hide where its words land.
         panel.canHide = false
-        let hosting = NSHostingView(rootView: PasteMarkerView(shortcutName: ""))
-        hosting.sizingOptions = []
-        hosting.autoresizingMask = [.width, .height]
-        panel.contentView = hosting
-        self.hosting = hosting
-        self.panel = panel
         return panel
     }
 }

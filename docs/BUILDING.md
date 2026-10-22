@@ -11,7 +11,7 @@ python3 scripts/public_check.py
 git clone https://github.com/handy-computer/transcribe.cpp.git .build/transcribe.cpp
 git -C .build/transcribe.cpp checkout --detach e0d5e6174bd5cceecfed4f1bb04d160bddb59f8f
 zsh scripts/transcribe/build_worker.sh "$PWD/.build/transcribe.cpp" "$PWD/.build/transcribe-stage"
-python3 scripts/package_app.py --mode preview --version 0.3.60 --build-number 87 --resources-dir Resources/Release --transcribe-worker .build/transcribe-stage
+python3 scripts/package_app.py --mode preview --version 0.3.62 --build-number 89 --resources-dir Resources/Release --transcribe-worker .build/transcribe-stage
 ```
 
 Tests run serially because parallel asynchronous suites can time out on a busy Mac. The package command prints a receipt with the new `dist/.../Tokens Community.app` path. Open that app manually.
@@ -28,14 +28,14 @@ Clone `https://github.com/handy-computer/transcribe.cpp` separately and check ou
 
 ```sh
 zsh scripts/transcribe/build_worker.sh /absolute/path/to/transcribe.cpp /absolute/path/to/new-worker-stage
-python3 scripts/package_app.py --mode preview --version 0.3.60 --build-number 87 --resources-dir Resources/Release --transcribe-worker /absolute/path/to/new-worker-stage
+python3 scripts/package_app.py --mode preview --version 0.3.62 --build-number 89 --resources-dir Resources/Release --transcribe-worker /absolute/path/to/new-worker-stage
 ```
 
 The worker build is arm64/macOS 14+, static Metal+CPU. Its package metadata makes Parakeet v3 the default for a fresh profile. First launch downloads the pinned 739,508,576-byte model from Hugging Face and verifies its SHA-256 before use. Capture waits for the selected local model; it never switches to Apple merely because weights are missing. Explicit saved selections survive updates. Apple can be selected on the Models page.
 
 Runtime model downloads are pinned in `SpeechModelCatalog.swift`; model weights retain their own licenses (Parakeet v3: CC-BY-4.0). The transcribe runtime does not link the optional Orukeet SDK or SentencePiece library. This distinction addresses the known Orukeet advisory; it is not a claim that native model parsing is risk-free.
 
-A deliberate minimal Apple-only build is available with `python3 scripts/package_app.py --mode preview --version 0.3.60 --build-number 87 --resources-dir Resources/Release --apple-only`. Omitting all backend flags is an error so an incomplete package cannot silently become Apple-first.
+A deliberate minimal Apple-only build is available with `python3 scripts/package_app.py --mode preview --version 0.3.62 --build-number 89 --resources-dir Resources/Release --apple-only`. Omitting all backend flags is an error so an incomplete package cannot silently become Apple-first.
 
 On private repositories, push CI also builds the pinned runtime and an ad-hoc preview ZIP as a seven-day Actions artifact. It downloads no speech weights, requests no app permissions and performs no microphone/paste test. Public-repository CI runs source checks without uploading an app.
 
@@ -47,7 +47,7 @@ The native SDK file checksums/source pin are recorded in `scripts/orukeet/sdk-bu
 
 ```sh
 python3 scripts/orukeet/stage_assets.py --sdk /absolute/path/to/sdk --model /absolute/path/to/model.gguf --output /absolute/path/to/new-orukeet-stage
-python3 scripts/package_app.py --mode preview --version 0.3.60 --build-number 87 --resources-dir Resources/Release --enable-orukeet --orukeet-assets /absolute/path/to/new-orukeet-stage
+python3 scripts/package_app.py --mode preview --version 0.3.62 --build-number 89 --resources-dir Resources/Release --enable-orukeet --orukeet-assets /absolute/path/to/new-orukeet-stage
 ```
 
 The staging command validates pinned inputs and does not silently download them. Keep all native/runtime/model notices. No model file or private staging directory is included here.

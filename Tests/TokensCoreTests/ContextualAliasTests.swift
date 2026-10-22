@@ -163,7 +163,7 @@ struct AliasCase: Sendable, CustomTestStringConvertible {
     /// stable prefix (the staged path) is always a prefix of the branded final.
     @Test func sentenceBoundedPrefixAgreesWithFinal() {
         let finals = [
-            "send that to codecs. then soul for luna reads",
+            "send that to codecs. then music for background listening",
             "ask cloud code agent now. the codecs thread can wait",
             "soul music first. then codecs in this session",
         ]

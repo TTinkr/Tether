@@ -4,6 +4,8 @@ import Foundation
 /// Reading missing preferences has no side effects.
 enum TokensOutputOptions {
     static let metadataKey = "TokensIncludeMetadata.v1"
+    /// "[thinking 5.24s]" pause lines in what is pasted; off unless turned on (build 88).
+    static let thinkingKey = "TokensIncludeThinking.v1"
     static let characterTagsKey = "TokensIncludeCharacterTags.v1"
     static let numberTagsKey = "TokensIncludeNumberTags.v1"
 
@@ -60,27 +62,36 @@ enum TokensOutputOptions {
 
     /// `headerNotes` are one-line `> *…*` notes appended to the metadata block (for example
     /// ScreenReferenceSampler.lines). With metadata off they are dropped: raw stays raw.
-    static func parts(_ rendered: String, metadata: Bool, headerNotes: [String] = []) -> TokensPromptParts {
-        guard metadata else { return TokensPromptParts(marker: "", body: thinkingMarkers(rendered), metadata: "") }
-        let full = TokensDecoration.parts(rendered, decorated: false, headerNotes: headerNotes)
-        let words = full.body.trimmingCharacters(in: .whitespacesAndNewlines)
-        return TokensPromptParts(marker: "", body: thinkingMarkers(words) + footer(full.metadata, body: words), metadata: "")
+    /*
+    Build 88: two independent switches, both off by default. `thinking` keeps the pause
+    notes as "[thinking 5.24s]" lines; off, they are taken out (History keeps them). `metadata`
+    adds the one footer line. The thinking layout ("# π …" with its receipt) is split here and
+    only its words are delivered; plain text passes through unchanged.
+    */
+    static func parts(_ rendered: String, metadata: Bool, thinking: Bool = false,
+                      headerNotes: [String] = []) -> TokensPromptParts {
+        let full = rendered.hasPrefix("# π ") ? TokensDecoration.parts(rendered, decorated: false, headerNotes: headerNotes) : nil
+        let words = full.map { $0.body.trimmingCharacters(in: .whitespacesAndNewlines) } ?? rendered
+        let shown = thinking ? thinkingMarkers(words) : InlineTalkMarkdown.joiningPauseNotes(words)
+        let tail = metadata ? (full.map { footer($0.metadata, body: words) } ?? "") : ""
+        return TokensPromptParts(marker: "", body: shown + tail, metadata: "")
+    }
+
+    /// Build 89 hard rule: a talk pastes only when it has spoken words. Pause notes,
+    /// punctuation, tags and the footer are generated, so on their own they are not words.
+    static func hasWords(_ spoken: String) -> Bool {
+        ThinkingComposer.removingAnnotations(spoken)
+            .replacingOccurrences(of: #"\[thinking \d+(?:\.\d+)?s\]"#, with: "", options: .regularExpression)
+            .unicodeScalars.contains(where: CharacterSet.alphanumerics.contains)
     }
 
     /// Pause notes are delivered as plain "[thinking 5.24s]" (UX review). Only this delivery
     /// edge changes them; history readers and the envelope still see the internal "*[pause 5.2400]*".
     static func thinkingMarkers(_ text: String) -> String {
-        let range = NSRange(text.startIndex..., in: text)
-        var out = text
-        for match in pauseMarker.matches(in: text, range: range).reversed() {
-            guard let whole = Range(match.range, in: out), let number = Range(match.range(at: 1), in: text),
-                  let seconds = Double(text[number]) else { continue }
-            out.replaceSubrange(whole, with: String(format: "[thinking %.2fs]", seconds))
-        }
-        return out
+        // Prose only: a code span that quotes "*[pause 1.0000]*" keeps its bytes (build 88).
+        InlineTalkMarkdown.thinkingLines(text)
     }
 
-    private static let pauseMarker = try! NSRegularExpression(pattern: #"\*\[pause (\d+\.\d+)\]\*"#)
     private static let stats = try! NSRegularExpression(pattern: #"> \*(\d+(?:\.\d+)?)s · (\d+) words? · (\d+) wpm"#)
 
     /*
